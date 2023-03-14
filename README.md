@@ -4,20 +4,20 @@
 >  * First useful activity
 >  * Second useful activity
 >  </hr><br>
->  [Check the website! (TBD)](https://github.com/ovrael/programming-project)
+>  Check the website! (TBD) <br>
+>  https://github.com/ovrael/programming-project <br>
 >  <br>Enjoy!
 
 ## Content
 
 - [Programming project](#Programming-project)
-  - [Content](#Content)
+  - [Content](#content)
   - [General info](#general-info)
   - [Screenshots](#screenshots)
   - [Technologies](#technologies)
   - [Features](#features)
   - [Status](#status)
-  - [Inspiration](#inspiration)
-  - [Our team!](#Our-team!)
+  - [Our team!](#our-team)
 
 ## General info
 
@@ -28,6 +28,7 @@ Then collected data is send to machine learning model for some forecasting or so
 ## Screenshots
 
 To be done!
+
 [comment]: <img src="./path to image"/>
 
 
@@ -59,6 +60,6 @@ That means we are planning what to do and how we do it.
 
 ## Our team!
 
-* [Jacek Jendrzejewski](https://jacekjen.byst.re) (back-end developer)
+* [Jacek Jendrzejewski](https://jacekjen.byst.re), [Github](https://github.com/ovrael) (back-end developer)
 * [Maciej Baranowski](https://github.com/SonnyFixit) (back-end developer)
 * [Rafał Banaś](https://github.com) (back-end developer)
