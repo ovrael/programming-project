@@ -10,7 +10,7 @@
 
 ## Content
 
-- [Programming project](#Programming-project)
+- [Programming project](#programming-project)
   - [Content](#content)
   - [General info](#general-info)
   - [Screenshots](#screenshots)
