@@ -1,0 +1,41 @@
+﻿@page "/steam-games"
+@using ProgrammingProjectApplication.Data
+
+<h1>Steam Games</h1>
+
+<h4>Game Info List</h4>
+
+@if (GameInfos != null)
+{
+    <ul>
+        @foreach (var gameInfo in GameInfos)
+        {
+            <li>
+                <strong>@gameInfo.Title</strong>
+                <br />
+                Price: @gameInfo.OriginalPrice
+                <br />
+                Discount: @gameInfo.DiscountedPrice
+                <br />
+                Release Date: @gameInfo.ReleaseDate
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+
+@code {
+    
+    private List<SteamGameInfo> GameInfos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var httpClient = new HttpClient();
+        var steamScraper = new SteamScrapper(httpClient);
+        GameInfos = await steamScraper.Scrape();
+    }
+}
