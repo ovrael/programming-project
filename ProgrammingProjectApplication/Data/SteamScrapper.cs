@@ -17,79 +17,87 @@ namespace ProgrammingProjectApplication.Data
 
         private readonly HttpClient _httpClient;
 
-        private string _htmlDocumentParsed;
+        private int counter = 0;
 
-        StringBuilder sb = new StringBuilder();
+        private List<SteamGameInfo> gameInfos = new List<SteamGameInfo>();
 
         public SteamScrapper(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
 
-        public async Task<List<SteamGameInfo>> Scrape()
+        public async Task<List<SteamGameInfo>> Scrape(int loadedGamesCounter)
         {
 
-
-            var httpClient = new HttpClient();
-            var response = await httpClient.GetAsync("https://store.steampowered.com/search/results/?query=&start={0}&count=50&dynamic_data=&sort_by=_ASC&supportedlang=polish&os=win&snr=1_7_7_globaltopsellers_7&filter=globaltopsellers&infinite=1");
-
-            var jsonString = await response.Content.ReadAsStringAsync();
-            var jsonObject = JsonSerializer.Deserialize<JsonDocument>(jsonString);
-
-            var resultsHtml = jsonObject.RootElement.GetProperty("results_html").GetString();
-
-
-            var doc = new HtmlDocument();
-            doc.LoadHtml(resultsHtml);
-
-            var node = doc.DocumentNode.SelectNodes("//a");
-
-
-
-            List<SteamGameInfo> gameInfos = new List<SteamGameInfo>();
-
-            foreach (var nodeX in node)
+            do
             {
+                int howManyGames = counter * 50;
+                var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync(UrlFormat);
 
-                var steamGame = new SteamGameInfo();
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var jsonObject = JsonSerializer.Deserialize<JsonDocument>(jsonString);
 
-                var titleNode = nodeX.SelectSingleNode(".//span[contains(@class, 'title')]");
-                if (titleNode != null)
+                var resultsHtml = jsonObject.RootElement.GetProperty("results_html").GetString();
+
+
+                var doc = new HtmlDocument();
+                doc.LoadHtml(resultsHtml);
+
+                var node = doc.DocumentNode.SelectNodes("//a");
+
+                foreach (var nodeX in node)
                 {
-                    steamGame.Title = titleNode.InnerText.Trim();
+
+                    var steamGame = new SteamGameInfo();
+
+                    var titleNode = nodeX.SelectSingleNode(".//span[contains(@class, 'title')]");
+                    if (titleNode != null)
+                    {
+                        steamGame.Title = titleNode.InnerText.Trim();
+                    }
+
+
+                    var priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
+
+                    if (priceNode == null)
+                    {
+                        priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price')]");
+                    }
+                    if (priceNode != null)
+                    {
+                        steamGame.OriginalPrice = priceNode.InnerText.Trim();
+                    }
+
+                    var discountPriceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_discount')]");
+                    if (discountPriceNode != null)
+                    {
+                        steamGame.DiscountedPrice = discountPriceNode.InnerText.Trim();
+                    }
+
+
+                    var releaseDateNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_released')]");
+                    if (releaseDateNode != null)
+                    {
+                        steamGame.ReleaseDate = releaseDateNode.InnerText.Trim();
+                    }
+
+                    var urlLinkNode = nodeX.SelectSingleNode("//a[@href]");
+                    if (urlLinkNode != null)
+                    {
+                        string hrefValue = nodeX.Attributes["href"].Value;
+                        steamGame.UrlLink = hrefValue;
+                    }
+
+                    gameInfos.Add(steamGame);
+
                 }
 
-              
-                var priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
+                counter++;
 
-                if(priceNode == null)
-                {
-                    priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price')]");
-                }
-                if (priceNode != null)
-                {
-                    steamGame.OriginalPrice = priceNode.InnerText.Trim();
-                }
-
-                var discountPriceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_discount')]");
-                if (discountPriceNode != null)
-                {
-                    steamGame.DiscountedPrice = discountPriceNode.InnerText.Trim();
-                }
-
-
-                var releaseDateNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_released')]");
-                if (releaseDateNode != null)
-                {
-                    steamGame.ReleaseDate = releaseDateNode.InnerText.Trim();
-                }
-
-                gameInfos.Add(steamGame);
-                
-            }
+            } while (counter < loadedGamesCounter);
 
             return gameInfos;
-
 
         }
 
@@ -100,10 +108,6 @@ namespace ProgrammingProjectApplication.Data
             return dtDateTime;
         }
 
-
     }
-
- 
-
    
 }

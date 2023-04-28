@@ -8,6 +8,8 @@
             public string ReleaseDate { get; set; }
             public string OriginalPrice { get; set; }
             public string DiscountedPrice { get; set; }
-        
+            public string UrlLink { get; set; }
+
+
     }
 }

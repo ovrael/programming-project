@@ -2,12 +2,42 @@
 @using ProgrammingProjectApplication.Data
 
 <h1>Steam Games</h1>
-
+<br>
 <h4>Game Info List</h4>
+<br>
+
+<div class="form-group">
+    <p>Enter a value between 1 and 100:</p>
+    <input type="number" min="1" max="100" @bind-value="UserValue" />
+    @if (ErrorMessage != null)
+    {
+        <div class="text-danger">@ErrorMessage</div>
+        ErrorMessage = null;
+    }
+
+</div>
+
+<br>
+
+    <button type="button" class="btn btn-primary" @onclick="ScrapeGames">Scrape</button>
+
+<br>
+<br>
+
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
+
 
 @if (GameInfos != null)
 {
     <ul>
+
+        <p>Gathered @GameInfos.Count Games Info:</p>
+
+        
+
         @foreach (var gameInfo in GameInfos)
         {
             <li>
@@ -18,24 +48,65 @@
                 Discount: @gameInfo.DiscountedPrice
                 <br />
                 Release Date: @gameInfo.ReleaseDate
+                <br />
+                Url to game site: <a href="@gameInfo.UrlLink" target="_blank">@gameInfo.UrlLink</a>
             </li>
         }
+
+        
+
     </ul>
-}
-else
-{
-    <p>Loading...</p>
 }
 
 
 @code {
-    
+
+    private bool IsLoading;
+    private string ErrorMessage;
     private List<SteamGameInfo> GameInfos;
 
-    protected override async Task OnInitializedAsync()
+    private int UserValue;
+
+    private async Task ScrapeGames()
     {
-        var httpClient = new HttpClient();
-        var steamScraper = new SteamScrapper(httpClient);
-        GameInfos = await steamScraper.Scrape();
+
+        ValidateUserInput(UserValue);
+        StateHasChanged();
+
+        if(ErrorMessage == null)
+        {
+            var httpClient = new HttpClient();
+            var steamScraper = new SteamScrapper(httpClient);
+            try
+            {
+                IsLoading = true;
+
+                if (GameInfos != null)
+                {
+                    GameInfos.Clear();
+                }
+                GameInfos = await steamScraper.Scrape(UserValue);
+
+                IsLoading = false;
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        StateHasChanged();
+
     }
+
+    private string ValidateUserInput(int value)
+    {
+        if (value < 1 || value > 100)
+        {
+            ErrorMessage = "Please enter a value between 0 and 100.";
+        }
+
+        return null;
+    }
+
 }
