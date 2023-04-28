@@ -24,8 +24,11 @@
 
 <br>
 <br>
-<br>
 
+@if (IsLoading)
+{
+    <p>Loading...</p>
+}
 
 @if (urls != null)
 {
@@ -39,7 +42,8 @@
 }
 
 @code {
-    
+
+    private bool IsLoading;
     private string Url { get; set; }
     private string UrlValidationMessage { get; set; }
     private List<string> urls;
@@ -47,10 +51,17 @@
     private async Task CrawlAsync()
     {
         ValidateUrl();
+        StateHasChanged();
+        IsLoading = true;
+
         if (UrlValidationMessage == null)
         {
+            
             urls = await WebCrawler.CrawlAsync(Url);
+            
         }
+
+        IsLoading = false;
     }
 
     private void OnUrlInput(ChangeEventArgs e)
