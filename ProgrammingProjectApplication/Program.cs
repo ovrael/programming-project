@@ -9,6 +9,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddSingleton<SteamGameInfo>();
+builder.Services.AddSingleton<WebCrawler>();
 
 var app = builder.Build();
 

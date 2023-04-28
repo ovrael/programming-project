@@ -1,0 +1,39 @@
+﻿@page "/crawled-urls"
+
+@using ProgrammingProjectApplication.Data
+
+@inject WebCrawler WebCrawler
+
+<h1>Web Crawler Results</h1>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (urls == null)
+{
+    <p>No results.</p>
+}
+else
+{
+    <p>Gathered @urls.Count URLs:</p>
+    <ul>
+        @foreach (var url in urls)
+        {
+            <li>@url</li>
+        }
+    </ul>
+}
+
+@code {
+    
+    private bool isLoading = false;
+    private List<string> urls;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        urls = await WebCrawler.CrawlAsync("https://store.steampowered.com/?cc=pl&gclid=EAIaIQobChMI4-b9p_TL_gIVEgSLCh0S5wQMEAAYASAAEgL_ufD_BwE");
+        isLoading = false;
+    }
+}
