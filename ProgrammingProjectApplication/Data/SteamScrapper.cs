@@ -13,11 +13,8 @@ namespace ProgrammingProjectApplication.Data
 
     public class SteamScrapper
     {
-        private const string UrlFormat = "https://store.steampowered.com/search/results/?query=&start={0}&count=50&dynamic_data=&sort_by=_ASC&supportedlang=polish&os=win&snr=1_7_7_globaltopsellers_7&filter=globaltopsellers&infinite=1";
-
+       
         private readonly HttpClient _httpClient;
-
-        private int counter = 0;
 
         private List<SteamGameInfo> gameInfos = new List<SteamGameInfo>();
 
@@ -29,9 +26,16 @@ namespace ProgrammingProjectApplication.Data
         public async Task<List<SteamGameInfo>> Scrape(int loadedGamesCounter)
         {
 
+            int counter = 0;
+
             do
             {
+                
                 int howManyGames = counter * 50;
+
+                string UrlFormat = $"https://store.steampowered.com/search/results/?query=&start={howManyGames}&count=50&dynamic_data=&sort_by=_ASC&supportedlang=polish&os=win&snr=1_7_7_globaltopsellers_7&filter=globaltopsellers&infinite=1";
+
+
                 var httpClient = new HttpClient();
                 var response = await httpClient.GetAsync(UrlFormat);
 
