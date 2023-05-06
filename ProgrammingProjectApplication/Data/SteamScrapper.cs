@@ -63,6 +63,8 @@ namespace ProgrammingProjectApplication.Data
 
 
                     var priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
+                    string originalPrice = string.Empty;
+                    string discountedPrice = string.Empty;
 
                     if (priceNode == null)
                     {
@@ -70,8 +72,21 @@ namespace ProgrammingProjectApplication.Data
                     }
                     if (priceNode != null)
                     {
-                        steamGame.OriginalPrice = priceNode.InnerText.Trim();
+                        string[] prices = priceNode.InnerText.Trim().Split("zł");
+
+                        if (prices.Length >= 1)
+                        {
+                            originalPrice = prices[0].Trim();
+                        }
+
+                        if (prices.Length >= 2)
+                        {
+                            discountedPrice = prices[1].Trim();
+                        }
                     }
+
+                    steamGame.OriginalPrice = originalPrice;
+                    steamGame.DiscountedPrice = discountedPrice;
 
                     var discountPriceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_discount')]");
                     if (discountPriceNode != null)

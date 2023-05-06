@@ -36,8 +36,6 @@
 
         <p>Gathered @GameInfos.Count Games Info:</p>
 
-        
-
         @foreach (var gameInfo in GameInfos)
         {
             <li>
@@ -47,12 +45,25 @@
                 <br />
                 Price: @gameInfo.OriginalPrice
                 <br />
-                Discount: @gameInfo.DiscountAmount%
-                <br />
+
+                @{
+                    if (!string.IsNullOrEmpty(gameInfo.DiscountedPrice))
+                    {
+                        <text>
+                            Discount: @gameInfo.DiscountAmount%
+                            <br />
+                            Discounted price: @gameInfo.DiscountedPrice
+                            <br />
+                        </text>
+                    }
+                }
+
                 Release Date: @gameInfo.ReleaseDate
                 <br />
                 Url to game site: <a href="@gameInfo.UrlLink" target="_blank">@gameInfo.UrlLink</a>
             </li>
+
+            <br>
         }
 
         
