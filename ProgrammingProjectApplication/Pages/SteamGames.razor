@@ -43,9 +43,11 @@
             <li>
                 <strong>@gameInfo.Title</strong>
                 <br />
+                <img src="@gameInfo.ImageSource" alt="@gameInfo.Title" />
+                <br />
                 Price: @gameInfo.OriginalPrice
                 <br />
-                Discount: @gameInfo.DiscountedPrice
+                Discount: @gameInfo.DiscountAmount%
                 <br />
                 Release Date: @gameInfo.ReleaseDate
                 <br />

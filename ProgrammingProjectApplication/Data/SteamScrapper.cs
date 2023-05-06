@@ -76,9 +76,13 @@ namespace ProgrammingProjectApplication.Data
                     var discountPriceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_discount')]");
                     if (discountPriceNode != null)
                     {
-                        steamGame.DiscountedPrice = discountPriceNode.InnerText.Trim();
+                        string discountString = discountPriceNode.InnerText.Trim();
+                        steamGame.DiscountAmount = !string.IsNullOrEmpty(discountString) ? double.Parse(discountString.Replace("-", "").Replace("%", "")) : 0;
                     }
-
+                    else
+                    {
+                        steamGame.DiscountAmount = 0;
+                    }
 
                     var releaseDateNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_released')]");
                     if (releaseDateNode != null)
@@ -92,6 +96,13 @@ namespace ProgrammingProjectApplication.Data
                         string hrefValue = nodeX.Attributes["href"].Value;
                         steamGame.UrlLink = hrefValue;
                     }
+
+                    var imageNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_capsule')]/img");
+                    if (imageNode != null)
+                    {
+                        steamGame.ImageSource = imageNode.Attributes["src"].Value;
+                    }
+
 
                     gameInfos.Add(steamGame);
 
