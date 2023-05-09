@@ -22,7 +22,7 @@ namespace ProgrammingProjectApplication.Data
             _httpClient = httpClient;
         }
 
-        public async Task<List<SteamGameInfo>> Scrape(int loadedGamesCounter, bool scrapeTags)
+        public async IAsyncEnumerable<SteamGameInfo> Scrape(int loadedGamesCounter, bool scrapeTags)
         {
 
             int counter = 0;
@@ -49,91 +49,99 @@ namespace ProgrammingProjectApplication.Data
 
                 var node = doc.DocumentNode.SelectNodes("//a");
 
-                foreach (var nodeX in node)
+                if (node != null)
                 {
-
-                    var steamGame = new SteamGameInfo();
-
-                    var titleNode = nodeX.SelectSingleNode(".//span[contains(@class, 'title')]");
-                    if (titleNode != null)
+                    foreach (var nodeX in node)
                     {
-                        steamGame.Title = titleNode.InnerText.Trim();
-                    }
 
+                        var steamGame = new SteamGameInfo();
 
-                    var priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
-                    string originalPrice = string.Empty;
-                    string discountedPrice = string.Empty;
-
-                    if (priceNode == null)
-                    {
-                        priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price')]");
-                    }
-                    if (priceNode != null)
-                    {
-                        string[] prices = priceNode.InnerText.Trim().Split("zł");
-
-                        if (prices.Length >= 1)
+                        var titleNode = nodeX.SelectSingleNode(".//span[contains(@class, 'title')]");
+                        if (titleNode != null)
                         {
-                            originalPrice = prices[0].Trim();
+                            steamGame.Title = titleNode.InnerText.Trim();
                         }
 
-                        if (prices.Length >= 2)
+
+                        var priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
+                        string originalPrice = string.Empty;
+                        string discountedPrice = string.Empty;
+
+                        if (priceNode == null)
                         {
-                            discountedPrice = prices[1].Trim();
+                            priceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_price')]");
                         }
-                    }
-
-                    steamGame.OriginalPrice = originalPrice;
-                    steamGame.DiscountedPrice = discountedPrice;
-
-                    var discountPriceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_discount')]");
-                    if (discountPriceNode != null)
-                    {
-                        string discountString = discountPriceNode.InnerText.Trim();
-                        steamGame.DiscountAmount = !string.IsNullOrEmpty(discountString) ? double.Parse(discountString.Replace("-", "").Replace("%", "")) : 0;
-                    }
-                    else
-                    {
-                        steamGame.DiscountAmount = 0;
-                    }
-
-                    var releaseDateNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_released')]");
-                    if (releaseDateNode != null)
-                    {
-                        steamGame.ReleaseDate = releaseDateNode.InnerText.Trim();
-                    }
-
-                    var urlLinkNode = nodeX.SelectSingleNode("//a[@href]");
-                    if (urlLinkNode != null)
-                    {
-                        string hrefValue = nodeX.Attributes["href"].Value;
-                        steamGame.UrlLink = hrefValue;
-
-                        if(scrapeTags == true)
+                        if (priceNode != null)
                         {
-                            steamGame.GameTags = await ScrapeTagsFromUrl(steamGame.UrlLink);
+                            string[] prices = priceNode.InnerText.Trim().Split("zł");
+
+                            if (prices.Length >= 1)
+                            {
+                                originalPrice = prices[0].Trim();
+                            }
+
+                            if (prices.Length >= 2)
+                            {
+                                discountedPrice = prices[1].Trim();
+                            }
                         }
 
+                        steamGame.OriginalPrice = originalPrice;
+                        steamGame.DiscountedPrice = discountedPrice;
+
+                        var discountPriceNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_discount')]");
+                        if (discountPriceNode != null)
+                        {
+                            string discountString = discountPriceNode.InnerText.Trim();
+                            steamGame.DiscountAmount = !string.IsNullOrEmpty(discountString) ? double.Parse(discountString.Replace("-", "").Replace("%", "")) : 0;
+                        }
+                        else
+                        {
+                            steamGame.DiscountAmount = 0;
+                        }
+
+                        var releaseDateNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_released')]");
+                        if (releaseDateNode != null)
+                        {
+                            steamGame.ReleaseDate = releaseDateNode.InnerText.Trim();
+                        }
+
+                        var urlLinkNode = nodeX.SelectSingleNode("//a[@href]");
+                        if (urlLinkNode != null)
+                        {
+                            string hrefValue = nodeX.Attributes["href"].Value;
+                            steamGame.UrlLink = hrefValue;
+
+                            if (scrapeTags == true)
+                            {
+                                steamGame.GameTags = await ScrapeTagsFromUrl(steamGame.UrlLink);
+                            }
+
+                        }
+
+                        var imageNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_capsule')]/img");
+                        if (imageNode != null)
+                        {
+                            steamGame.ImageSource = imageNode.Attributes["src"].Value;
+                        }
+
+                        //gameInfos.Add(steamGame);
+                        yield return steamGame;
+
                     }
 
-                    var imageNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_capsule')]/img");
-                    if (imageNode != null)
-                    {
-                        steamGame.ImageSource = imageNode.Attributes["src"].Value;
-                    }
-
-                    gameInfos.Add(steamGame);
-
+                    
                 }
 
                 counter++;
+
+                
 
             } while (counter < loadedGamesCounter);
 
             httpClient.Dispose();
 
-            return gameInfos;
+            
 
         }
 

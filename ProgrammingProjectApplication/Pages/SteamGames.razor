@@ -52,7 +52,7 @@
 
 @if (IsLoading)
 {
-    <p>Loading...</p>
+    <p>Already loaded games... @alreadyLoadedGamesCounter</p>
 }
 
 
@@ -132,10 +132,12 @@
     private bool IsLoading;
     private bool scrapeTags = false;
     private string ErrorMessage;
-    private List<SteamGameInfo> GameInfos;
+    private List<SteamGameInfo> GameInfos = new List<SteamGameInfo>();
     private List<SteamGameInfo> sortedGameInfos;
 
     private int UserValue;
+
+    private int alreadyLoadedGamesCounter;
 
     private string SortField = "";
     private string SortOrder = "";
@@ -160,11 +162,24 @@
                 {
                     GameInfos.Clear();
                 }
-                GameInfos = await steamScraper.Scrape(UserValue, scrapeTags);
+                
+                await foreach (var game in steamScraper.Scrape(UserValue, scrapeTags))
+                {
+                    GameInfos.Add(game);
+                    alreadyLoadedGamesCounter++;
+
+                    if (GameInfos.Count % 10 == 0)
+                    {
+                        StateHasChanged();
+                    }
+
+
+                }
 
                 SortGameInfos(SortField, SortOrder);
 
                 IsLoading = false;
+                alreadyLoadedGamesCounter = 0;
             }
             catch (Exception ex)
             {
