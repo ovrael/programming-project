@@ -10,10 +10,9 @@ using HtmlAgilityPack;
 
 namespace ProgrammingProjectApplication.Data
 {
-
     public class SteamScrapper
     {
-       
+
         private readonly HttpClient _httpClient;
 
         private List<SteamGameInfo> gameInfos = new List<SteamGameInfo>();
@@ -23,20 +22,20 @@ namespace ProgrammingProjectApplication.Data
             _httpClient = httpClient;
         }
 
-        public async Task<List<SteamGameInfo>> Scrape(int loadedGamesCounter)
+        public async Task<List<SteamGameInfo>> Scrape(int loadedGamesCounter, bool scrapeTags)
         {
 
             int counter = 0;
 
+            var httpClient = new HttpClient();
+
             do
             {
-                
+
                 int howManyGames = counter * 50;
 
                 string UrlFormat = $"https://store.steampowered.com/search/results/?query=&start={howManyGames}&count=50&dynamic_data=&sort_by=_ASC&supportedlang=polish&os=win&snr=1_7_7_globaltopsellers_7&filter=globaltopsellers&infinite=1";
 
-
-                var httpClient = new HttpClient();
                 var response = await httpClient.GetAsync(UrlFormat);
 
                 var jsonString = await response.Content.ReadAsStringAsync();
@@ -110,6 +109,12 @@ namespace ProgrammingProjectApplication.Data
                     {
                         string hrefValue = nodeX.Attributes["href"].Value;
                         steamGame.UrlLink = hrefValue;
+
+                        if(scrapeTags == true)
+                        {
+                            steamGame.GameTags = await ScrapeTagsFromUrl(steamGame.UrlLink);
+                        }
+
                     }
 
                     var imageNode = nodeX.SelectSingleNode(".//div[contains(@class, 'search_capsule')]/img");
@@ -117,7 +122,6 @@ namespace ProgrammingProjectApplication.Data
                     {
                         steamGame.ImageSource = imageNode.Attributes["src"].Value;
                     }
-
 
                     gameInfos.Add(steamGame);
 
@@ -127,17 +131,33 @@ namespace ProgrammingProjectApplication.Data
 
             } while (counter < loadedGamesCounter);
 
+            httpClient.Dispose();
+
             return gameInfos;
 
         }
 
-        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        private async Task<List<string>> ScrapeTagsFromUrl(string url)
         {
-            var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-            return dtDateTime;
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(url);
+            var html = await response.Content.ReadAsStringAsync();
+
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            var tagNodes = doc.DocumentNode.SelectNodes("//a[contains(@class, 'app_tag')]");
+            var tags = new List<string>();
+            if (tagNodes != null)
+            {
+                foreach (var node in tagNodes)
+                {
+                    tags.Add(node.InnerText.Trim());
+                }
+            }
+            return tags;
         }
 
     }
-   
+
 }

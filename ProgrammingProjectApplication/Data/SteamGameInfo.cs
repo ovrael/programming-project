@@ -11,7 +11,11 @@
             public double DiscountAmount { get; set; }
             public string UrlLink { get; set; }
 
-     
+            public bool ShowTags { get; set; }
+
+            public List<string> GameTags;
+
+
 
     }
 }
