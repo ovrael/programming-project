@@ -109,3 +109,14 @@ C:\GitRepositories\programming-project\ScrapperTest\obj\Debug\net7.0\refint\Scra
 C:\GitRepositories\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.pdb
 C:\GitRepositories\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.genruntimeconfig.cache
 C:\GitRepositories\programming-project\ScrapperTest\obj\Debug\net7.0\ref\ScrapperTest.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\AngleSharp.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\AngleSharp.Css.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\AngleSharp.Diffing.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Bunit.Core.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\AngleSharpWrappers.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Bunit.Web.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Microsoft.AspNetCore.Components.WebAssembly.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Microsoft.AspNetCore.Components.WebAssembly.Authentication.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Microsoft.JSInterop.WebAssembly.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Castle.Core.dll
+C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Moq.dll
