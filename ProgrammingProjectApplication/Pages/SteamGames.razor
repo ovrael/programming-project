@@ -19,53 +19,130 @@
 
 <br>
 
-    <button type="button" class="btn btn-primary" @onclick="ScrapeGames">Scrape</button>
+<button type="button" class="btn btn-primary" @onclick="ScrapeGames">Scrape</button>
+
+<br>
+<br>
+
+<div class="form-group">
+    <label for="sort-field">Sort by field:</label>
+    <select class="form-control" id="sort-field" @bind="SortField">
+        <option value="Title">Title</option>
+        <option value="DiscountAmount">Discount</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="sort-order">Sort order:</label>
+    <select class="form-control" id="sort-order" @bind="SortOrder">
+        <option value="Asc">Ascending</option>
+        <option value="Desc">Descending</option>
+    </select>
+</div>
+
+<br>
+
+<p>Scrape Tags: @scrapeTags</p>
+
+<button @onclick="ToggleScrapeTags">Toggle Scrape Tags</button>
+
 
 <br>
 <br>
 
 @if (IsLoading)
 {
-    <p>Loading...</p>
+    <p>Already loaded games... @alreadyLoadedGamesCounter</p>
 }
 
 
-@if (GameInfos != null)
+@if (sortedGameInfos != null)
 {
     <ul>
 
-        <p>Gathered @GameInfos.Count Games Info:</p>
+        <p><strong style="font-size: 18px;">Gathered @sortedGameInfos.Count Games Info:</strong></p>
 
-        
 
-        @foreach (var gameInfo in GameInfos)
+        @foreach (var gameInfo in sortedGameInfos)
         {
             <li>
                 <strong>@gameInfo.Title</strong>
                 <br />
+                <br />
+                <img src="@gameInfo.ImageSource" alt="@gameInfo.Title" />
+                <br />
+                <br />
                 Price: @gameInfo.OriginalPrice
                 <br />
-                Discount: @gameInfo.DiscountedPrice
-                <br />
+
+                @{
+                    if (!string.IsNullOrEmpty(gameInfo.DiscountedPrice))
+                    {
+                        <text>
+                            Discount: @gameInfo.DiscountAmount%
+                            <br />
+                            Discounted price: @gameInfo.DiscountedPrice
+                            <br />
+                        </text>
+                    }
+                }
+
                 Release Date: @gameInfo.ReleaseDate
                 <br />
                 Url to game site: <a href="@gameInfo.UrlLink" target="_blank">@gameInfo.UrlLink</a>
-            </li>
-        }
 
-        
+                <br>
+                <br>
+
+                @if (gameInfo.GameTags != null)
+                {
+                    <div style="display: @(!gameInfo.ShowTags ? "none" : "block")">
+                        @if (gameInfo.GameTags.Count == 0)
+                        {
+                            <p>No tags found</p>
+                        }
+                        else
+                        {
+                            <ul>
+                                @foreach (var tag in gameInfo.GameTags)
+                                {
+                                    <li>@tag</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    <br>
+
+                    <button type="button" class="btn btn-sm btn-secondary" @onclick="(e) => ToggleTags(gameInfo)">@(gameInfo.ShowTags ? "Hide tags" : "Show tags")</button>
+                }
+
+
+            </li>
+
+            <br>
+
+        }
 
     </ul>
 }
 
-
 @code {
 
     private bool IsLoading;
+    private bool scrapeTags = false;
     private string ErrorMessage;
-    private List<SteamGameInfo> GameInfos;
+    private List<SteamGameInfo> GameInfos = new List<SteamGameInfo>();
+    private List<SteamGameInfo> sortedGameInfos;
 
     private int UserValue;
+
+    private int alreadyLoadedGamesCounter;
+
+    private string SortField = "";
+    private string SortOrder = "";
+
+    private bool ShowTags;
 
     private async Task ScrapeGames()
     {
@@ -73,7 +150,7 @@
         ValidateUserInput(UserValue);
         StateHasChanged();
 
-        if(ErrorMessage == null)
+        if (ErrorMessage == null)
         {
             var httpClient = new HttpClient();
             var steamScraper = new SteamScrapper(httpClient);
@@ -85,9 +162,24 @@
                 {
                     GameInfos.Clear();
                 }
-                GameInfos = await steamScraper.Scrape(UserValue);
+                
+                await foreach (var game in steamScraper.Scrape(UserValue, scrapeTags))
+                {
+                    GameInfos.Add(game);
+                    alreadyLoadedGamesCounter++;
+
+                    if (GameInfos.Count % 10 == 0)
+                    {
+                        StateHasChanged();
+                    }
+
+
+                }
+
+                SortGameInfos(SortField, SortOrder);
 
                 IsLoading = false;
+                alreadyLoadedGamesCounter = 0;
             }
             catch (Exception ex)
             {
@@ -108,5 +200,48 @@
 
         return null;
     }
+
+    private void SortGameInfos(string sortField, string sortOrder)
+    {
+        switch (sortField)
+        {
+            case "Title":
+                if (sortOrder == "Asc")
+                {
+                    sortedGameInfos = GameInfos.OrderBy(g => g.Title).ToList();
+                }
+                else if (sortOrder == "Desc")
+                {
+                    sortedGameInfos = GameInfos.OrderByDescending(g => g.Title).ToList();
+                }
+                break;
+
+            case "DiscountAmount":
+                if (sortOrder == "Asc")
+                {
+                    sortedGameInfos = GameInfos.OrderBy(x => x.DiscountAmount).ToList();
+                }
+                else if (sortOrder == "Desc")
+                {
+                    sortedGameInfos = GameInfos.OrderByDescending(x => x.DiscountAmount).ToList();
+                }
+                break;
+
+            default:
+                sortedGameInfos = GameInfos;
+                break;
+        }
+    }
+
+    private void ToggleTags(SteamGameInfo gameInfo)
+    {
+        gameInfo.ShowTags = !gameInfo.ShowTags;
+    }
+
+    private void ToggleScrapeTags()
+    {
+        scrapeTags = !scrapeTags;
+    }
+
 
 }
