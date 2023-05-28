@@ -1,15 +1,19 @@
-.page {
+/*.page {
     position: relative;
     display: flex;
     flex-direction: column;
-}
-
+}*/
+/*
 main {
     flex: 1;
-}
-
+}*/
+/*
 .sidebar {
     background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}*/
+
+.mainContent {
+    height: 100vh;
 }
 
 .top-row {
@@ -46,7 +50,7 @@ main {
 }
 
 @media (min-width: 641px) {
-    .page {
+    /*    .page {
         flex-direction: row;
     }
 
@@ -55,7 +59,7 @@ main {
         height: 100vh;
         position: sticky;
         top: 0;
-    }
+    }*/
 
     .top-row {
         position: sticky;

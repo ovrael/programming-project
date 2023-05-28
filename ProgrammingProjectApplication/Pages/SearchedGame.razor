@@ -1,0 +1,22 @@
+﻿@using MyWebsiteBlazor.Database;
+@using ProgrammingProjectApplication.Data;
+
+@if (gameData is not null && gameData.Title.Length > 0)
+{
+    <div class="">
+        <h3>@gameData.Title</h3>
+    </div>
+}
+
+@code
+{
+    private GameData gameData = null;
+
+    public async Task SearchForGame(string gameTitle)
+    {
+        DebugHelper.WriteMessage($"Searching for: {gameTitle}");
+        gameData = await SteamScrapper.ScrapeSearchedGame(gameTitle);
+        DebugHelper.WriteMessage($"Found: {DebugHelper.GameDataToString(gameData)}");
+        await InvokeAsync(StateHasChanged);
+    }
+}

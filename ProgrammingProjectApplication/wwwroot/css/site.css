@@ -5,6 +5,7 @@ html, body {
     background-image: url('../img/background.svg');
     background-color: rgb(25, 25, 25);
     color: rgb(200, 200, 200);
+    height: 100vh !important;
 }
 
 
