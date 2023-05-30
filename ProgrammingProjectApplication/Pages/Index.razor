@@ -1,43 +1,78 @@
 ﻿@page "/"
+@using MyWebsiteBlazor.Database;
+@using MyWebsiteBlazor.Data.Database.Models;
+@using ProgrammingProjectApplication.Components;
+@using ProgrammingProjectApplication.Data;
+@inject IJSRuntime jsRuntime
+
 
 <PageTitle>Index</PageTitle>
 
 <div class="row text-center">
-    <div class="logo col-12">
-        GAME        <br />
-        CHANGER
-    </div>
-</div>
-<div class="searchBarContainer">
-    <div class="label">Search for game</div>
-    <div class="searchBar">
-        <input id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Search" @bind-value="SearchText" @onkeydown="CheckEnter" />
-        <button id="searchQuerySubmit" type="submit" name="searchQuerySubmit" @onclick="SearchGame">
-            <svg style="width:24px;height:24px" viewBox="0 0 24 24">
-                <path fill="#666666" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
-            </svg>
-        </button>
+    <div class="logo col-12 pt-5">
+        GAME CHANGER
     </div>
 </div>
 
-<SearchedGame @ref="ChildComponent"></SearchedGame>
+@if (!foundGame)
+{
+    <div class="searchBarContainer">
+        <div class="label">Search for game</div>
+        <div class="searchBar">
+            <input id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Search" value="@searchText"
+               @oninput="(e)=> searchText = e.Value.ToString()" @onkeydown="CheckIfPressedEnter" />
+            <button id="searchQuerySubmit" type="submit" name="searchQuerySubmit" @onclick="SearchForGame">
+                <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                    <path fill="#666666" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <SearchedGame @ref="searchedGameData"></SearchedGame>
+
+}
+
 @code
 {
-    protected SearchedGame ChildComponent;
-    private string SearchText { get; set; } = string.Empty;
+    protected SearchedGame? searchedGameData;
+    private string searchText = string.Empty;
+    private bool foundGame = false;
 
-
-    private async Task SearchGame()
-    {
-        await Task.Delay(10); // Waits for update search text with input value -.- <- other option is to use javascript...
-        await ChildComponent.SearchForGame(SearchText);
-    }
-
-    public async Task CheckEnter(KeyboardEventArgs e)
+    public async Task CheckIfPressedEnter(KeyboardEventArgs e)
     {
         if (e.Code == "Enter")
         {
-            await SearchGame();
+            await SearchForGame();
         }
+    }
+
+    public async Task SearchForGame()
+    {
+        searchText = searchText.Trim();
+        if (searchText.Length == 0)
+        {
+            Console.WriteLine("Search text is empty");
+            return;
+        }
+
+        DebugHelper.WriteMessage($"Searching for: {searchText}");
+
+        Response response = await SteamScrapper.ScrapeSearchedGame(searchText);
+        foundGame = response.Result;
+
+        if (!response.Result)
+        {
+            DebugHelper.WriteMessage($"Can't find game. Response:{response.Message}", MessageType.Error);
+            await jsRuntime.InvokeAsync<string>("ShowAlert", response.Message);
+            return;
+        }
+
+        await InvokeAsync(StateHasChanged); // Force SearchedGame component to create and render
+        searchedGameData.SetGameData(response.ReturnedObject as GameData);
+
+        DebugHelper.WriteMessage($"Found: {DebugHelper.GameDataToString(response.ReturnedObject as GameData)}");
     }
 }

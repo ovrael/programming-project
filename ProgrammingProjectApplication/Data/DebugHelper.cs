@@ -1,4 +1,6 @@
 using MyWebsiteBlazor.Database;
+using System.Reflection;
+using System.Text;
 
 public enum MessageType
 {
@@ -19,14 +21,24 @@ public static class DebugHelper
 
     public static string GameDataToString(GameData gameData)
     {
-        return $"Title: {gameData.Title}\n" +
-            $"Description: {gameData.Description}\n" +
-            $"Tags: {gameData.Tags}\n" +
-            $"OriginalPrice: {gameData.OriginalPrice}\n" +
-            $"DiscountedPrice: {gameData.DiscountedPrice}\n" +
-            $"RatingInPercantage: {gameData.RatingInPercantage} \n" +
-            $"SteamUrl: {gameData.SteamUrl} \n" +
-            $"ReleaseDate: {gameData.ReleaseDate} \n" +
-            $"LastUpdated: {gameData.LastUpdated}";
+        StringBuilder gameDataProperties = new StringBuilder();
+
+        Type gameDataType = gameData.GetType();
+        PropertyInfo[] properties = gameDataType.GetProperties();
+
+        foreach (PropertyInfo property in properties)
+        {
+            gameDataProperties.AppendLine($"{property.Name}: {property.GetValue(gameData, null)}");
+        }
+        return gameDataProperties.ToString();
+        //return $"Title: {gameData.Title}\n" +
+        //    $"Description: {gameData.Description}\n" +
+        //    $"Tags: {gameData.Tags}\n" +
+        //    $"OriginalPrice: {gameData.OriginalPrice}\n" +
+        //    $"DiscountedPrice: {gameData.DiscountedPrice}\n" +
+        //    $"RatingInPercantage: {gameData.RatingInPercantage} \n" +
+        //    $"SteamUrl: {gameData.SteamUrl} \n" +
+        //    $"ReleaseDate: {gameData.ReleaseDate} \n" +
+        //    $"LastUpdated: {gameData.LastUpdated}";
     }
 }

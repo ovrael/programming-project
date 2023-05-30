@@ -1,0 +1,44 @@
+﻿@using MyWebsiteBlazor.Database;
+@using ProgrammingProjectApplication.Data;
+
+@if (gameData is null || gameData.Title.Length == 0)
+{
+    @*<ErrorMessage />*@
+    return;
+}
+
+
+<div class="row panel">
+    <div class="col-md-12 col-lg-3">
+        <img class="image" src="@gameData.ImageSource" alt="@gameData.Title" />
+    </div>
+    <div class="col-md-12 col-lg-9 textPanel">
+        <span class="title">@gameData.Title</span>
+        <span class="releaseDate"> (@gameData.ReleaseDate.Year) </span>
+        <br>
+        <span class="tagsList"> @GetFirstTags(5) </span>
+        <br>
+        <span class="tagsList"> @gameData.Description </span>
+    </div>
+</div>
+
+
+@code
+{
+    private GameData gameData = new GameData();
+
+
+
+    public void SetGameData(GameData gameData)
+    {
+        if (gameData is null) return;
+        this.gameData = gameData;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetFirstTags(int count)
+    {
+        string[] tags = gameData.Tags.Split(';');
+        return string.Join(", ", tags.Take(count));
+    }
+}

@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Globalization;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
+using MyWebsiteBlazor.Data.Database.Models;
 using MyWebsiteBlazor.Database;
-using ProgrammingProjectApplication.Pages;
+using System.Text.Json;
 
 namespace ProgrammingProjectApplication.Data
 {
@@ -20,7 +11,7 @@ namespace ProgrammingProjectApplication.Data
 
         private readonly HttpClient _httpClient;
 
-        private List<SteamGameInfo> gameInfos = new List<SteamGameInfo>();
+        private readonly List<SteamGameInfo> gameInfos = new List<SteamGameInfo>();
 
         public SteamScrapper(HttpClient httpClient)
         {
@@ -169,28 +160,27 @@ namespace ProgrammingProjectApplication.Data
             return tags;
         }
 
-        public static async Task<GameData> ScrapeSearchedGame(string title)
+        public static async Task<Response> ScrapeSearchedGame(string title)
         {
             string formatedTitle = title.Replace(' ', '+');
             string searchUrl = $"https://store.steampowered.com/search/results/?query=&term={formatedTitle}&infinite=1";
             string resultsHtml = await GetResultHTML(searchUrl);
-            if (resultsHtml.Length == 0) return new GameData();
+            if (resultsHtml.Length == 0)
+                return new Response(false, $"Couldn't find game with title:{title}", new GameData());
 
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(resultsHtml);
 
             var node = doc.DocumentNode.SelectNodes("//a");
 
-            if (node is null) return new GameData();
+            if (node is null)
+                return new Response(false, $"Couldn't find game with title:{title}", new GameData());
 
             var firstGameNode = node.First();
             GameData gameData = new GameData();
 
             var titleNode = firstGameNode.SelectSingleNode(".//span[contains(@class, 'title')]");
-            if (titleNode != null)
-            {
-                gameData.Title = titleNode.InnerText.Trim();
-            }
+            gameData.Title = titleNode is not null ? titleNode.InnerText.Trim() : string.Empty;
 
 
             var priceNode = firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
@@ -223,17 +213,23 @@ namespace ProgrammingProjectApplication.Data
             {
                 string hrefValue = firstGameNode.Attributes["href"].Value;
                 gameData.SteamUrl = hrefValue;
-                var tagsFromUrl = await ScrapeGameTagsFromSteam(gameData.SteamUrl);
-                gameData.Tags = string.Join(';', tagsFromUrl);
             }
 
-            var imageNode = firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_capsule')]/img");
-            if (imageNode != null)
-            {
-                gameData.SteamUrl = imageNode.Attributes["src"].Value;
-            }
+            if (gameData.SteamUrl is null || gameData.SteamUrl.Length == 0)
+                return new Response(true, $"Found: {gameData.Title} game", gameData);
 
-            return gameData;
+
+            var additionalData = await ScrapeAdditionalGameData(gameData.SteamUrl);
+            gameData.Tags = additionalData["tags"];
+            gameData.Description = additionalData["description"];
+            gameData.ImageSource = additionalData["imageSource"];
+
+            int.TryParse(additionalData["ratingPercentage"], out int ratingPercentage);
+            int.TryParse(additionalData["reviewsCount"], out int reviewsCount);
+            gameData.RatingInPercantage = ratingPercentage;
+            gameData.ReviewsCount = reviewsCount;
+
+            return new Response(true, $"Found: {gameData.Title} game", gameData);
         }
 
         private static async Task<string> GetResultHTML(string url)
@@ -270,6 +266,67 @@ namespace ProgrammingProjectApplication.Data
             }
 
             return tags;
+        }
+
+        /// <summary>
+        /// Gets additional data about game from steam store.
+        /// </summary>
+        /// <param name="url">Steam url to game</param>
+        /// <returns>
+        /// Dictionary with keys: 
+        /// <list type="bullet">
+        /// <item>tags</item>
+        /// <item>description</item>
+        /// <item>ratingPercentage</item>
+        /// <item>reviewsCount</item>
+        /// <item>imageSource</item>
+        /// </list>
+        /// </returns>
+        private static async Task<Dictionary<string, string>> ScrapeAdditionalGameData(string url)
+        {
+            Dictionary<string, string> additionalData = new Dictionary<string, string>();
+
+            var response = await httpClient.GetAsync(url);
+            var html = await response.Content.ReadAsStringAsync();
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            var docNode = doc.DocumentNode;
+
+            // Joined Tags
+            var tagNodes = docNode.SelectNodes("//a[contains(@class, 'app_tag')]");
+            string joinedTags = string.Empty;
+            if (tagNodes is not null && tagNodes.Count > 0)
+            {
+                var tags = tagNodes.Select(t => t.InnerText.Trim());
+                joinedTags = string.Join(";", tags);
+            }
+            additionalData.Add("tags", joinedTags);
+
+
+            // Description
+            var descriptionNode = docNode.SelectSingleNode("//div[contains(@class, 'game_description_snippet')]");
+            string description = descriptionNode is not null ? descriptionNode.InnerText.Trim() : string.Empty;
+            additionalData.Add("description", description);
+
+
+            // Rating in percantage
+            var ratingNode = docNode.SelectSingleNode("//span[contains(@class, 'game_review_summary')]");
+            string rating = ratingNode is not null ? ratingNode.Attributes["data-tooltip-html"].Value : string.Empty;
+            rating = rating.Split('%')[0];
+            additionalData.Add("ratingPercentage", rating);
+
+            // Reviews count
+            var reviewsCountNode = docNode.SelectSingleNode("//span[contains(@class, 'user_reviews_count')]");
+            string reviewsCount = reviewsCountNode is not null ? reviewsCountNode.InnerText.Trim('(', ')') : string.Empty;
+            additionalData.Add("reviewsCount", reviewsCount);
+
+
+            // Image source
+            var imageNode = docNode.SelectSingleNode("//img[contains(@class, 'game_header_image_full')]/img");
+            string imageSource = imageNode is not null ? imageNode.Attributes["src"].Value : string.Empty;
+            additionalData.Add("imageSource", imageSource);
+
+            return additionalData;
         }
     }
 }

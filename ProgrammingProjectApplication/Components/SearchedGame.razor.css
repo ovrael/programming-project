@@ -1,0 +1,33 @@
+.panel {
+    width: 50%;
+    height: fit-content;
+    margin: 0 auto;
+}
+
+.image {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: auto 0;
+}
+
+.textPanel {
+    background: rgba(0,0,0, 0.25);
+    border-radius: 8px;
+    color: white;
+    padding: 6px 12px 6px 12px;
+}
+
+.title {
+    font-weight: 600;
+    font-style: normal;
+    font-size: 22px;
+}
+
+.releaseDate {
+    font-size: 20px;
+}
+
+.tagsList {
+    font-size: 16px;
+}
