@@ -236,6 +236,7 @@ namespace ProgrammingProjectApplication.Data
         {
             var response = await httpClient.GetAsync(url);
             var jsonString = await response.Content.ReadAsStringAsync();
+            // idk why it crashes here, cant convert to json...
             var jsonObject = JsonSerializer.Deserialize<JsonDocument>(jsonString);
 
             if (jsonObject is null) return string.Empty;
@@ -310,9 +311,9 @@ namespace ProgrammingProjectApplication.Data
 
 
             // Rating in percantage
-            var ratingNode = docNode.SelectSingleNode("//span[contains(@class, 'game_review_summary')]");
-            string rating = ratingNode is not null ? ratingNode.Attributes["data-tooltip-html"].Value : string.Empty;
-            rating = rating.Split('%')[0];
+            var ratingNode = docNode.SelectSingleNode("//span[contains(@class, 'responsive_reviewdesc_short')]");
+            string rating = ratingNode is not null ? ratingNode.InnerText.Trim() : string.Empty;
+            rating = rating.Trim('(', ')').Split('%')[0];
             additionalData.Add("ratingPercentage", rating);
 
             // Reviews count
@@ -322,7 +323,7 @@ namespace ProgrammingProjectApplication.Data
 
 
             // Image source
-            var imageNode = docNode.SelectSingleNode("//img[contains(@class, 'game_header_image_full')]/img");
+            var imageNode = docNode.SelectSingleNode("//img[contains(@class, 'game_header_image_full')]");
             string imageSource = imageNode is not null ? imageNode.Attributes["src"].Value : string.Empty;
             additionalData.Add("imageSource", imageSource);
 

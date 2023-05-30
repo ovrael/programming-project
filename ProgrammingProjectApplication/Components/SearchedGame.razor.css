@@ -31,3 +31,33 @@
 .tagsList {
     font-size: 16px;
 }
+
+.ratingPanel {
+    background: rgba(0,0,0, 0.55);
+    border-radius: 8px;
+    font-weight: 700;
+    font-style: normal;
+    font-size: 16px;
+    line-height: 32px;
+    width: fit-content !important;
+}
+
+.veryLowRating {
+    color: red;
+}
+
+.lowRating {
+    color: rgb(245, 110, 86);
+}
+
+.mediumRating {
+    color: rgb(242, 145, 61);
+}
+
+.goodRating {
+    color: rgb(136, 226, 21);
+}
+
+.veryGoodRating {
+    color: rgb(51, 230, 37);
+}

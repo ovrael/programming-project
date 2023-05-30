@@ -10,15 +10,36 @@
 
 <div class="row panel">
     <div class="col-md-12 col-lg-3">
+        @*<a href="@gameData.SteamUrl">*@
         <img class="image" src="@gameData.ImageSource" alt="@gameData.Title" />
+        @*</a>*@
     </div>
     <div class="col-md-12 col-lg-9 textPanel">
-        <span class="title">@gameData.Title</span>
-        <span class="releaseDate"> (@gameData.ReleaseDate.Year) </span>
-        <br>
-        <span class="tagsList"> @GetFirstTags(5) </span>
-        <br>
-        <span class="tagsList"> @gameData.Description </span>
+        <div class="row pe-2">
+            <div class="col-8">
+                <span class="title">@gameData.Title</span>
+                <span class="releaseDate"> (@gameData.ReleaseDate.Year) </span>
+            </div>
+            <div class="col-2 offset-2 @GetRatingColorClass() ratingPanel text-center ms-auto me-0">
+                @gameData.RatingInPercantage %
+            </div>
+        </div>
+        <div class="row">
+            <span class="tagsList"> @GetFirstTags(5) </span>
+        </div>
+        <div class="row">
+            <span class="tagsList">
+                @if (gameData.Description.Length < maxDescriptionLength)
+                {
+                    @gameData.Description
+                }
+                else
+                {
+                    @gameData.Description.Substring(0, maxDescriptionLength)
+                    <span>...</span>
+                }
+            </span>
+        </div>
     </div>
 </div>
 
@@ -26,14 +47,27 @@
 @code
 {
     private GameData gameData = new GameData();
-
-
+    private const int maxDescriptionLength = 350;
 
     public void SetGameData(GameData gameData)
     {
         if (gameData is null) return;
         this.gameData = gameData;
         InvokeAsync(StateHasChanged);
+    }
+
+    private string GetRatingColorClass()
+    {
+        int[] ratingThresholds = new int[] { 25, 45, 65, 85, 101 };
+        string[] ratingClasses = new string[] { "veryLow", "low", "medium", "good", "veryGood" };
+
+        for (int i = 0; i < ratingThresholds.Length; i++)
+        {
+            if (gameData.RatingInPercantage < ratingThresholds[i])
+                return ratingClasses[i] + "Rating";
+        }
+
+        return "mediumRating";
     }
 
     private string GetFirstTags(int count)
