@@ -6,7 +6,7 @@ namespace MyWebsiteBlazor.Database
     public class GameData
     {
         [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public int Id { get; set; } = -1;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string ImageSource { get; set; } = string.Empty;
@@ -20,7 +20,7 @@ namespace MyWebsiteBlazor.Database
         public double DiscountedPrice { get; set; } = 0.0;
 
 
-        public DateTime ReleaseDate { get; set; } = new DateTime(2000, 1, 1, 0, 0, 0, 0, 0);
-        public DateTime LastUpdated { get; set; } = DateTime.Now;
+        public DateTime ReleaseDate { get; set; } = DateTime.MinValue;
+        public DateTime LastUpdated { get; set; } = DateTime.MinValue;
     }
 }

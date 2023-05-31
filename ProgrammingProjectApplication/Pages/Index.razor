@@ -8,20 +8,20 @@
 
 <PageTitle>Index</PageTitle>
 
-<div class="row text-center">
-    <div class="logo col-12 pt-5">
-        GAME CHANGER
-    </div>
-</div>
 
 @if (!foundGame)
 {
+    <div class="row text-center">
+        <div class="logo col-12 pt-5">
+            GAME CHANGER
+        </div>
+    </div>
     <div class="searchBarContainer">
         <div class="label">Search for game</div>
         <div class="searchBar">
             <input id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Search" value="@searchText"
                @oninput="(e)=> searchText = e.Value.ToString()" @onkeydown="CheckIfPressedEnter" />
-            <button id="searchQuerySubmit" type="submit" name="searchQuerySubmit" @onclick="SearchForGame">
+            <button id="searchQuerySubmit" type="submit" name="searchQuerySubmit" @onclick="FindGameData">
                 <svg style="width:24px;height:24px" viewBox="0 0 24 24">
                     <path fill="#666666" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
                 </svg>
@@ -31,13 +31,29 @@
 }
 else
 {
-    <SearchedGame @ref="searchedGameData"></SearchedGame>
-
+    <div class="row text-center">
+        <div class="col-12 py-3">
+            <h3>
+                You searched for
+            </h3>
+        </div>
+    </div>
+    <SearchedGame @ref="searchedGame"></SearchedGame>
+    <div class="row text-center">
+        <div class="col-12 pt-4 pb-2">
+            <h3>
+                Maybe try one of them?
+            </h3>
+        </div>
+    </div>
+    <SuggestedGames @ref="suggestedGames"></SuggestedGames>
 }
 
 @code
 {
-    protected SearchedGame? searchedGameData;
+    private SearchedGame? searchedGame;
+    private SuggestedGames? suggestedGames;
+    private GameData searchedGameData = new GameData();
     private string searchText = string.Empty;
     private bool foundGame = false;
 
@@ -45,11 +61,11 @@ else
     {
         if (e.Code == "Enter")
         {
-            await SearchForGame();
+            await FindGameData();
         }
     }
 
-    public async Task SearchForGame()
+    public async Task FindGameData()
     {
         searchText = searchText.Trim();
         if (searchText.Length == 0)
@@ -60,19 +76,65 @@ else
 
         DebugHelper.WriteMessage($"Searching for: {searchText}");
 
+        GameData databaseGameData = await DatabaseHandler.GetGameDataAsync(searchText);
+        searchedGameData = databaseGameData.Id >= 0 ? databaseGameData : await SearchWebForGameData(searchText);
+        foundGame = searchedGameData.Id >= 0;
+        if (!foundGame)
+        {
+            await jsRuntime.InvokeAsync<string>("ShowAlert", $"Could not find any game with title: {searchText}");
+            return;
+        }
+        await InvokeAsync(StateHasChanged); // Force SearchedGame component to create and render
+
+        if (searchedGame is null || suggestedGames is null)
+        {
+            DebugHelper.WriteMessage($"Searched game data or suggestedGames component wasn't created and rendered.", MessageType.Error);
+            await jsRuntime.InvokeAsync<string>("ShowAlert", "Something went wrong...");
+            return;
+        }
+
+        searchedGame.SetGameData(searchedGameData);
+        suggestedGames.SetGameData(searchedGameData);
+        await UpdateDatabase(searchedGameData);
+
+        DebugHelper.WriteMessage($"Found: {DebugHelper.GameDataToString(searchedGameData)}");
+    }
+
+    public async Task<GameData> SearchWebForGameData(string title)
+    {
         Response response = await SteamScrapper.ScrapeSearchedGame(searchText);
-        foundGame = response.Result;
 
         if (!response.Result)
         {
             DebugHelper.WriteMessage($"Can't find game. Response:{response.Message}", MessageType.Error);
             await jsRuntime.InvokeAsync<string>("ShowAlert", response.Message);
+            return new GameData();
+        }
+
+        var gameData = response.ReturnedObject as GameData;
+        if (gameData is null)
+        {
+            DebugHelper.WriteMessage($"Game data is null after successfully responded from scrapper.", MessageType.Error);
+            await jsRuntime.InvokeAsync<string>("ShowAlert", "Something went wrong...");
+            return new GameData();
+        }
+
+        return gameData;
+    }
+
+    private async Task UpdateDatabase(GameData gameData)
+    {
+        GameData gameDataInDatabase = await DatabaseHandler.GetGameDataAsync(gameData.Title, gameData.ReleaseDate.Year);
+        DateTime weekAgoFromToday = DateTime.Today.AddDays(-7);
+
+        if (DateTime.Compare(gameDataInDatabase.LastUpdated, weekAgoFromToday) > 0)
+        {
+            // Updated in the past 7 days
+            // No need to update
             return;
         }
 
-        await InvokeAsync(StateHasChanged); // Force SearchedGame component to create and render
-        searchedGameData.SetGameData(response.ReturnedObject as GameData);
-
-        DebugHelper.WriteMessage($"Found: {DebugHelper.GameDataToString(response.ReturnedObject as GameData)}");
+        gameData.LastUpdated = DateTime.Today;
+        await DatabaseHandler.UpdateGameDataAsync(gameData);
     }
 }

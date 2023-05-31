@@ -1,0 +1,106 @@
+﻿@using MyWebsiteBlazor.Database;
+@using ProgrammingProjectApplication.Data;
+@using System.Globalization;
+
+@if (suggestedGames.Length == 0)
+{
+    return;
+}
+
+<div class="panel pe-4">
+
+    @for (int i = 0; i < suggestedGames.Length; i++)
+    {
+        GameData gameData = suggestedGames[i];
+        <div class="row singleGame mb-3">
+            <div class="col-md-12 col-lg-2 text-center">
+                <img class="image " src="@gameData.ImageSource" alt="@gameData.Title" />
+            </div>
+            <div class="col-md-12 col-lg-10 textPanel">
+                <div class="row pe-2">
+                    <div class="col-8">
+                        <span class="title">@gameData.Title</span>
+                    </div>
+                    <div class="col-4 ms-auto me-0 pe-0" style="text-align: right;">
+
+
+                        @if (gameData.DiscountedPrice > 0)
+                        {
+                            <span class="ratingPanel text-center px-2 me-2" style="color: gray">
+                                <strike> @gameData.OriginalPrice.ToString("N2") </strike> $
+                            </span>
+                            <span class="ratingPanel text-center px-2 me-2">
+                                @gameData.DiscountedPrice.ToString("N2") $
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="ratingPanel text-center px-2 me-2">
+                                @GetPriceText(gameData)
+                            </span>
+                        }
+
+                        <span class="@GetRatingColorClass(gameData) ratingPanel text-center px-2">
+                            @gameData.RatingInPercantage %
+                            <span class="reviewsCountTooltip">
+                                @GetReviesCount() reviews
+                            </span>
+                        </span>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+
+@code
+{
+    private GameData gameData = new GameData();
+
+    private GameData[] suggestedGames = Array.Empty<GameData>();
+
+    public void SetGameData(GameData gameData)
+    {
+        if (gameData is null) return;
+        this.gameData = gameData;
+
+        suggestedGames = new GameData[30];
+        for (int i = 0; i < suggestedGames.Length; i++)
+        {
+            suggestedGames[i] = this.gameData;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetRatingColorClass(GameData gameData)
+    {
+        int[] ratingThresholds = new int[] { 25, 45, 65, 85, 101 };
+        string[] ratingClasses = new string[] { "veryLow", "low", "medium", "good", "veryGood" };
+
+        for (int i = 0; i < ratingThresholds.Length; i++)
+        {
+            if (gameData.RatingInPercantage < ratingThresholds[i])
+                return ratingClasses[i] + "Rating";
+        }
+
+        return "mediumRating";
+    }
+
+    private string GetReviesCount()
+    {
+        var numberFormat = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+        numberFormat.NumberGroupSeparator = " ";
+        return gameData.ReviewsCount.ToString("#,0", numberFormat);
+    }
+
+    private string GetPriceText(GameData gameData)
+    {
+        if (gameData.OriginalPrice > 0)
+            return gameData.OriginalPrice.ToString("N2") + " $";
+        else
+            return "Free";
+    }
+}

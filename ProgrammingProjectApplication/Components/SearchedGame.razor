@@ -1,5 +1,6 @@
 ﻿@using MyWebsiteBlazor.Database;
 @using ProgrammingProjectApplication.Data;
+@using System.Globalization;
 
 @if (gameData is null || gameData.Title.Length == 0)
 {
@@ -7,28 +8,34 @@
     return;
 }
 
-
 <div class="row panel">
     <div class="col-md-12 col-lg-3">
-        @*<a href="@gameData.SteamUrl">*@
-        <img class="image" src="@gameData.ImageSource" alt="@gameData.Title" />
-        @*</a>*@
+        <a href="@gameData.SteamUrl">
+            <img class="image" src="@gameData.ImageSource" alt="@gameData.Title" />
+        </a>
     </div>
     <div class="col-md-12 col-lg-9 textPanel">
         <div class="row pe-2">
-            <div class="col-8">
+            <div class="col-9">
                 <span class="title">@gameData.Title</span>
                 <span class="releaseDate"> (@gameData.ReleaseDate.Year) </span>
             </div>
-            <div class="col-2 offset-2 @GetRatingColorClass() ratingPanel text-center ms-auto me-0">
+            <div class="col-2 offset-1 @GetRatingColorClass() ratingPanel text-center ms-auto me-0">
+
                 @gameData.RatingInPercantage %
+
+                <span class="reviewsCountTooltip">
+                    @GetReviesCount() reviews
+                </span>
+
             </div>
         </div>
         <div class="row">
             <span class="tagsList"> @GetFirstTags(5) </span>
         </div>
+        <br />
         <div class="row">
-            <span class="tagsList">
+            <span class="">
                 @if (gameData.Description.Length < maxDescriptionLength)
                 {
                     @gameData.Description
@@ -74,5 +81,12 @@
     {
         string[] tags = gameData.Tags.Split(';');
         return string.Join(", ", tags.Take(count));
+    }
+
+    private string GetReviesCount()
+    {
+        var numberFormat = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+        numberFormat.NumberGroupSeparator = " ";
+        return gameData.ReviewsCount.ToString("#,0", numberFormat);
     }
 }

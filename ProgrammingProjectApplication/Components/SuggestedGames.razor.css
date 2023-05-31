@@ -1,27 +1,34 @@
 .panel {
-    width: 50%;
-    height: fit-content;
+    width: 55%;
+    height: 60%;
     margin: 0 auto;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.singleGame {
+    max-height: 50px;
 }
 
 .image {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
+    height: 50px;
+    width: auto;
+    border-radius: 2px;
     margin: auto 0;
 }
 
 .textPanel {
     background: rgba(0,0,0, 0.25);
-    border-radius: 8px;
+    border-radius: 4px;
     color: white;
     padding: 6px 12px 6px 12px;
+    line-height: 40px;
 }
 
 .title {
     font-weight: 600;
     font-style: normal;
-    font-size: 22px;
+    font-size: 17px;
 }
 
 .releaseDate {
@@ -40,7 +47,7 @@
     visibility: hidden;
     width: fit-content !important;
     white-space: nowrap;
-    padding: 3px 8px;
+    padding: 3px 0;
     text-align: center;
     color: white;
     font-size: 14px;
@@ -48,12 +55,14 @@
     border-radius: 4px;
     /* Position the tooltip */
     position: absolute;
-    bottom: 0px;
-    left: calc(100% + 10px);
+    top: 0;
+    right: calc(100% + 10px);
     z-index: 1;
 }
 
 .ratingPanel {
+    height: 30px;
+    margin: auto 0;
     background: rgba(0,0,0, 0.55);
     border-radius: 8px;
     font-weight: 700;
@@ -84,3 +93,25 @@
 .veryGoodRating {
     color: rgb(51, 230, 37);
 }
+
+/* ===== Scrollbar CSS ===== */
+/* Firefox */
+* {
+    scrollbar-width: auto;
+    scrollbar-color: #c7c7c7 #575757;
+}
+
+    /* Chrome, Edge, and Safari */
+    *::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: #575757;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: #c7c7c7;
+        border-radius: 4px;
+        border: 0px solid #000000;
+    }
