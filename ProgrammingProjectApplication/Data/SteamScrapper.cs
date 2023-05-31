@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using MyWebsiteBlazor.Data.Database.Models;
 using MyWebsiteBlazor.Database;
 using System.Text.Json;
@@ -163,7 +164,7 @@ namespace ProgrammingProjectApplication.Data
         public static async Task<Response> ScrapeSearchedGame(string title)
         {
             string formatedTitle = title.Replace(' ', '+');
-            string searchUrl = $"https://store.steampowered.com/search/results/?query=&term={formatedTitle}&infinite=1";
+            string searchUrl = $"https://store.steampowered.com/search/results/?query=&term={formatedTitle}&infinite=1&cc=us";
             string resultsHtml = await GetResultHTML(searchUrl);
             if (resultsHtml.Length == 0)
                 return new Response(false, $"Couldn't find game with title:{title}", new GameData());
@@ -186,7 +187,7 @@ namespace ProgrammingProjectApplication.Data
             var priceNode = firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
             priceNode ??= firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_price')]");
 
-            string[] prices = priceNode.InnerText.Trim().Split("zł");
+            string[] prices = priceNode.InnerText.Trim().Split("$").Skip(1).ToArray();
 
             if (prices.Length >= 1)
             {
@@ -201,15 +202,9 @@ namespace ProgrammingProjectApplication.Data
 
             if (prices.Length >= 2)
             {
-                if (prices[1].Trim().ToLower() == "free to play")
-                    gameData.DiscountedPrice = 0.0;
-                else
-                {
-                    double.TryParse(prices[1].Trim().Replace(',', '.'), out double discountedPrice);
-                    gameData.DiscountedPrice = discountedPrice;
-                }
+                double.TryParse(prices[1].Trim().Replace(',', '.'), out double discountedPrice);
+                gameData.DiscountedPrice = discountedPrice;
             }
-
 
             var releaseDateNode = firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_released')]");
             if (releaseDateNode != null)
@@ -227,7 +222,6 @@ namespace ProgrammingProjectApplication.Data
 
             if (gameData.SteamUrl is null || gameData.SteamUrl.Length == 0)
                 return new Response(true, $"Found: {gameData.Title} game", gameData);
-
 
             var additionalData = await ScrapeAdditionalGameData(gameData.SteamUrl);
             gameData.Tags = additionalData["tags"];
@@ -248,7 +242,6 @@ namespace ProgrammingProjectApplication.Data
 
             var response = await httpClient.GetAsync(url);
             var jsonString = await response.Content.ReadAsStringAsync();
-            // idk why it crashes here, cant convert to json...
             var jsonObject = JsonSerializer.Deserialize<JsonDocument>(jsonString);
 
             if (jsonObject is null) return string.Empty;
@@ -277,6 +270,11 @@ namespace ProgrammingProjectApplication.Data
         private static async Task<Dictionary<string, string>> ScrapeAdditionalGameData(string url)
         {
             Dictionary<string, string> additionalData = new Dictionary<string, string>();
+
+            //var msg = new HttpRequestMessage(HttpMethod.Get, url);
+            //msg.Headers.Add("Language", "Polish");
+            //var res = await httpClient.SendAsync(msg);
+            //var content = await res.Content.ReadAsStringAsync();
 
             var response = await httpClient.GetAsync(url);
             var html = await response.Content.ReadAsStringAsync();

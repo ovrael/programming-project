@@ -1,3 +1,8 @@
+.panelWrap {
+    width: 85%;
+    margin: 0 auto;
+}
+
 .panel {
     width: 55%;
     height: 60%;
@@ -56,8 +61,9 @@
     /* Position the tooltip */
     position: absolute;
     top: 0;
-    right: calc(100% + 10px);
-    z-index: 1;
+    left: calc(100% + 10px);
+    z-index: 9999;
+    overflow: visible; /* Pozwala na wyjœcie tooltipu poza marginesy rodzica */
 }
 
 .ratingPanel {
