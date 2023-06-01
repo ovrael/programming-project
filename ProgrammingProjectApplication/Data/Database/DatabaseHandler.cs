@@ -1,7 +1,7 @@
-﻿using MyWebsiteBlazor.Data.Database.Models;
+﻿using ProgrammingProjectApplication.Data.Database.Models;
 using SQLite;
 
-namespace MyWebsiteBlazor.Database
+namespace ProgrammingProjectApplication.Database
 {
     public static class DatabaseHandler
     {
@@ -16,14 +16,14 @@ namespace MyWebsiteBlazor.Database
             if (!File.Exists(path))
             {
                 databaseAsyncConnection = new SQLiteAsyncConnection(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.ReadWrite);
-                databaseAsyncConnection.CreateTableAsync<GameData>();
+                CreateTables();
                 return;
             }
 
             try
             {
                 databaseAsyncConnection = new SQLiteAsyncConnection(path);
-                databaseAsyncConnection.CreateTableAsync<GameData>();
+                CreateTables();
             }
             catch (Exception e)
             {
@@ -34,14 +34,21 @@ namespace MyWebsiteBlazor.Database
                 string emergencyDbPath = Path.Combine(projectDirectory, emergencyDbName);
 
                 databaseAsyncConnection = new SQLiteAsyncConnection(emergencyDbPath, SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.ReadWrite);
-                databaseAsyncConnection.CreateTableAsync<GameData>();
+                CreateTables();
             }
+        }
+
+        private static void CreateTables()
+        {
+            databaseAsyncConnection.CreateTableAsync<GameData>();
+            databaseAsyncConnection.CreateTableAsync<SteamTag>();
         }
 
         #region GameData
         public static async Task<Response> AddGameDataAsync(GameData gameData)
         {
-            if (await GameDataExistsAsync(gameData.Title, gameData.ReleaseDate.Year))
+            int gameDataIndex = await GameDataExistsAsync(gameData.Title, gameData.ReleaseDate.Year);
+            if (gameDataIndex >= 0)
             {
                 return new Response(false, $"Game with that title already exists in database! Game title: \'{gameData.Title}\'");
             }
@@ -54,11 +61,12 @@ namespace MyWebsiteBlazor.Database
                 return new Response(false, "Insert operation failed.");
         }
 
-        public static async Task<bool> GameDataExistsAsync(string title, int releaseYear)
+        public static async Task<int> GameDataExistsAsync(string title, int releaseYear)
         {
             var tableContent = await databaseAsyncConnection.Table<GameData>().ToArrayAsync();
             var gameData = tableContent.FirstOrDefault(gd => gd.Title == title && gd.ReleaseDate.Year == releaseYear);
-            return gameData is not null;
+            gameData = gameData is null ? new GameData() : gameData;
+            return gameData.Id;
         }
 
         public static async Task<GameData[]> GetAllGamesDataAsync()
@@ -116,7 +124,7 @@ namespace MyWebsiteBlazor.Database
         {
             try
             {
-                int modifiedRows = await databaseAsyncConnection.UpdateAsync(gameData);
+                int modifiedRows = await databaseAsyncConnection.UpdateAsync(gameData, gameData.GetType());
                 if (modifiedRows > 0)
                     return new Response(true, $"Game:{gameData.Title} succesfully updated!");
                 else
@@ -127,6 +135,57 @@ namespace MyWebsiteBlazor.Database
                 return new Response(false, $"Can't update:{gameData.Title}! Exception message: {e.Message}");
             }
         }
+        #endregion
+
+        #region SteamTags
+
+        public static async Task<Response> AddSteamTag(SteamTag steamTag)
+        {
+            if (await SteamTagExists(steamTag.Name, steamTag.Value))
+            {
+                return new Response(false, $"Steam tag exists!");
+            }
+
+            int rows = await databaseAsyncConnection.InsertAsync(steamTag);
+
+            if (rows > 0)
+                return new Response(true, "Added to database");
+            else
+                return new Response(false, "Insert operation failed.");
+        }
+
+        public static async Task<Response> ClearSteamTagsTable()
+        {
+            int rows = await databaseAsyncConnection.DeleteAllAsync<SteamTag>();
+
+            if (rows > 0)
+                return new Response(true, $"Deleted {rows} rows from database");
+            else
+                return new Response(false, "Delete operation failed.");
+        }
+
+        public static async Task<Response> AddManySteamTags(IEnumerable<SteamTag> steamTags)
+        {
+            int rows = await databaseAsyncConnection.InsertAllAsync(steamTags);
+
+            if (rows > 0)
+                return new Response(true, $"Added {rows} rows to database");
+            else
+                return new Response(false, "Insert operation failed.");
+        }
+
+        public static async Task<bool> SteamTagExists(string name, int value)
+        {
+            var tableContent = await databaseAsyncConnection.Table<SteamTag>().ToArrayAsync();
+            var steamTag = tableContent.FirstOrDefault(st => st.Name == name && st.Value == value);
+            return steamTag is not null;
+        }
+
+        public static async Task<SteamTag[]> GetAllSteamTags()
+        {
+            return await databaseAsyncConnection.Table<SteamTag>().ToArrayAsync();
+        }
+
         #endregion
     }
 }

@@ -1,0 +1,231 @@
+﻿@page "/adminPanel"
+@using ProgrammingProjectApplication.Data.Database.Models;
+@using ProgrammingProjectApplication.Database;
+@using ProgrammingProjectApplication.Tools;
+@using ProgrammingProjectApplication.Data;
+@inject IJSRuntime jsRuntime
+
+
+<PageTitle>Admin Panel</PageTitle>
+
+<div class="row text-center">
+    <div class="logo col-12 pt-5">
+        Admin panel
+    </div>
+</div>
+@if (!adminLogged)
+{
+    <div class="searchBarContainer">
+        <div class="label">Provide password</div>
+        <div class="searchBar">
+            <input id="searchQueryInput" type="password" name="searchQueryInput" placeholder="Password" value="@inputPassword"
+               @oninput="(e)=> inputPassword = e.Value.ToString()" @onkeydown="CheckIfPressedEnter" />
+        </div>
+    </div>
+
+    return;
+}
+
+<div class="container mainPanel pt-3">
+
+    <div class="row adminPanelRow">
+        <div class="col-8">
+            GET ALL steam tags to database?
+        </div>
+        <div class="col-2 offset-2 ms-auto me-0">
+            <button type="button" class="btn optionButton updateButton" @onclick="UpdateDatabaseSteamTags">
+                GET ALL
+            </button>
+        </div>
+    </div>
+
+    <div class="row adminPanelRow">
+        <div class="col-8">
+            CLEAR steam tags table in database?
+        </div>
+        <div class="col-2 offset-2 ms-auto me-0">
+            <button type="button" class="btn optionButton deleteButton" @onclick="ClearSteamTagsTable">
+                DELETE
+            </button>
+        </div>
+    </div>
+
+    <div class="row adminPanelRow">
+        <div class="col-8">
+            UPDATE scrapper data in database?
+        </div>
+        <div class="col-2 offset-2 ms-auto me-0">
+            <button type="button" class="btn optionButton updateButton" @onclick="UpdateDatabaseGameData" disabled=@updateGameDataButtonDisable>
+                @updateGameDataButtonText
+            </button>
+        </div>
+        <div class="col-4 mt-2 pb-2">
+            <div class="searchBar">
+                <input class="searchQueryInput" id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Tag name" value="@inputTag"
+                       @oninput="(e)=> {inputTag = e.Value.ToString(); CheckTags();}" />
+            </div>
+        </div>
+        <div class="col-8 mt-2 pb-2">
+            @for (int i = 0; i < filteredTags.Count; i++)
+            {
+                int index = i;
+                SteamTag currentTag = filteredTags[index];
+
+                <span class="steamTag px-2 py-1 me-3" @onclick="(e) => {AddSelectedTag(currentTag);}">
+                    @currentTag.Name
+                </span>
+            }
+        </div>
+        <div class="col-12 mt-2 pb-2">
+            <span> SELECTED TAGS: </span>
+            @for (int i = 0; i < selectedTags.Count; i++)
+            {
+                int index = i;
+                SteamTag currentTag = selectedTags[index];
+                <span class="selectedSteamTag px-2 py-1 me-3" @onclick="(e) => {RemoveSelectedTag(currentTag);}">
+                    @currentTag.Name
+                </span>
+            }
+        </div>
+        <div class="col-4 mt-2 pb-2">
+            <span>NUMBER OF GAMES: </span>
+        </div>
+        <div class="col-3 mt-2 pb-2">
+            <span class="searchBar">
+                <input class="searchQueryInput" type="text" placeholder="Games count" value="@inputGamesCount"
+                       @oninput="(e)=> {inputGamesCount = e.Value.ToString();}" />
+            </span>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private string inputPassword = string.Empty;
+    private string inputTag = string.Empty;
+    private string inputGamesCount = "20";
+    private bool adminLogged = true;
+    private SteamTag[] steamTags = Array.Empty<SteamTag>();
+    private List<SteamTag> filteredTags = new List<SteamTag>();
+    private List<SteamTag> selectedTags = new List<SteamTag>();
+
+    private bool updateGameDataButtonDisable = false;
+    private string updateGameDataButtonText = "UPDATE";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        steamTags = await DatabaseHandler.GetAllSteamTags();
+    }
+
+    private void CheckIfPressedEnter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter")
+        {
+            TryLogin();
+        }
+    }
+
+    private void TryLogin()
+    {
+        inputPassword = inputPassword.Trim();
+        if (inputPassword.Length == 0)
+        {
+            return;
+        }
+
+        adminLogged = Security.VerifyPassword(inputPassword);
+        inputPassword = string.Empty;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task UpdateDatabaseSteamTags()
+    {
+        var tags = await SteamScrapper.ScrapeSteamTags();
+        var response = await DatabaseHandler.AddManySteamTags(tags);
+        await jsRuntime.InvokeVoidAsync("ShowAlert", response.Message);
+    }
+
+    private async Task ClearSteamTagsTable()
+    {
+        var response = await DatabaseHandler.ClearSteamTagsTable();
+        await jsRuntime.InvokeVoidAsync("ShowAlert", response.Message);
+    }
+
+    private void CheckTags()
+    {
+        filteredTags = new List<SteamTag>();
+        inputTag = inputTag.Trim();
+        if (steamTags.Length == 0 || inputTag.Length == 0)
+            return;
+
+        filteredTags = steamTags.Where(st => st.Name.ToLower().Contains(inputTag.ToLower()) && !selectedTags.Contains(st)).Take(3).ToList();
+    }
+
+    private void AddSelectedTag(SteamTag steamTag)
+    {
+        selectedTags.Add(steamTag);
+        filteredTags.Remove(steamTag);
+        CheckTags();
+    }
+
+    private void RemoveSelectedTag(SteamTag steamTag)
+    {
+        selectedTags.Remove(steamTag);
+        CheckTags();
+    }
+
+
+    private async Task UpdateDatabaseGameData()
+    {
+        DebugHelper.WriteMessage("Updating...");
+        updateGameDataButtonDisable = true;
+        updateGameDataButtonText = "Downloading...";
+        await InvokeAsync(StateHasChanged);
+
+        int.TryParse(inputGamesCount, out int gamesCount);
+
+        if (gamesCount <= 0)
+            gamesCount = 20;
+
+        var games = await SteamScrapper.ScrapeGameData(selectedTags, gamesCount);
+
+        updateGameDataButtonText = "Updating...";
+        await InvokeAsync(StateHasChanged);
+
+        int addedGamesCounter = 0;
+        int updatedGamesCounter = 0;
+        int failedOperationsCounter = 0;
+        int gameCounter = 0;
+
+        foreach (var game in games)
+        {
+            DebugHelper.WriteMessage($"Updating {gameCounter} game");
+            gameCounter++;
+            Response dbResponse;
+            int gameDataIndex = await DatabaseHandler.GameDataExistsAsync(game.Title, game.ReleaseDate.Year);
+            if (gameDataIndex >= 0)
+            {
+                game.LastUpdated = DateTime.Today;
+                game.Id = gameDataIndex;
+
+                dbResponse = await DatabaseHandler.UpdateGameDataAsync(game);
+                if (dbResponse.Result) updatedGamesCounter++;
+                else failedOperationsCounter++;
+            }
+            else
+            {
+                dbResponse = await DatabaseHandler.AddGameDataAsync(game);
+                if (dbResponse.Result) addedGamesCounter++;
+                else failedOperationsCounter++;
+            }
+        }
+
+        updateGameDataButtonDisable = false;
+        updateGameDataButtonText = "UPDATE";
+        await InvokeAsync(StateHasChanged);
+
+        await jsRuntime.InvokeAsync<string>("ShowAlert", $"Added: {addedGamesCounter}\n Updated: {updatedGamesCounter}\n Failed: {failedOperationsCounter}");
+
+    }
+}

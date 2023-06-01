@@ -1,6 +1,6 @@
 ﻿using SQLite;
 
-namespace MyWebsiteBlazor.Database
+namespace ProgrammingProjectApplication.Database
 {
     [Table("GameData")]
     public class GameData

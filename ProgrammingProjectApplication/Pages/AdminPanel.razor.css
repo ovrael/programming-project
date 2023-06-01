@@ -1,0 +1,59 @@
+.mainPanel {
+    width: 60%;
+    height: 70%;
+    border-radius: 8px;
+    margin: 0 auto;
+    background-color: rgba(0,0,0,0.35);
+    color: white;
+}
+
+.adminPanelRow {
+    background-color: rgba(255, 255, 255, 0.2);
+    margin-bottom: 16px;
+    font-size: 18px;
+    line-height: 50px;
+    min-height: 50px;
+}
+
+.updateButton {
+    background-color: rgb(139, 251, 122);
+}
+
+.deleteButton {
+    background-color: rgb(255, 111, 79);
+}
+
+.optionButton {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0px !important;
+    font-weight: 600;
+}
+
+    .optionButton:hover {
+        -moz-filter: brightness(70%);
+        -webkit-filter: brightness(70%);
+        filter: brightness(70%);
+    }
+
+.steamTag {
+    border: 1px solid blue;
+    background-color: rgb(136, 141, 254);
+    border-radius: 4px;
+    color: black;
+}
+
+    .steamTag:hover {
+        cursor: pointer;
+    }
+
+.selectedSteamTag {
+    border: 1px solid red;
+    background-color: rgb(254, 143, 136);
+    border-radius: 4px;
+    color: black;
+}
+
+    .selectedSteamTag:hover {
+        cursor: pointer;
+    }

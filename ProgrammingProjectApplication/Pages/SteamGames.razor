@@ -152,18 +152,17 @@
 
         if (ErrorMessage == null)
         {
-            var httpClient = new HttpClient();
-            var steamScraper = new SteamScrapper(httpClient);
             try
             {
                 IsLoading = true;
+                var scrappedGamed = SteamScrapper.Scrape(UserValue, scrapeTags);
 
                 if (GameInfos != null)
                 {
                     GameInfos.Clear();
                 }
-                
-                await foreach (var game in steamScraper.Scrape(UserValue, scrapeTags))
+
+                await foreach (var game in scrappedGamed)
                 {
                     GameInfos.Add(game);
                     alreadyLoadedGamesCounter++;

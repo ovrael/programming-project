@@ -1,6 +1,6 @@
 ﻿@page "/"
-@using MyWebsiteBlazor.Database;
-@using MyWebsiteBlazor.Data.Database.Models;
+@using ProgrammingProjectApplication.Database;
+@using ProgrammingProjectApplication.Data.Database.Models;
 @using ProgrammingProjectApplication.Components;
 @using ProgrammingProjectApplication.Data;
 @inject IJSRuntime jsRuntime
@@ -19,7 +19,7 @@
     <div class="searchBarContainer">
         <div class="label">Search for game</div>
         <div class="searchBar">
-            <input id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Search" value="@searchText"
+            <input class="searchQueryInput" id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Search" value="@searchText"
                @oninput="(e)=> searchText = e.Value.ToString()" @onkeydown="CheckIfPressedEnter" />
             <button id="searchQuerySubmit" type="submit" name="searchQuerySubmit" @onclick="FindGameData">
                 <svg style="width:24px;height:24px" viewBox="0 0 24 24">
@@ -56,6 +56,7 @@ else
     private GameData searchedGameData = new GameData();
     private string searchText = string.Empty;
     private bool foundGame = false;
+    private int daysForUpdate = 1;
 
     public async Task CheckIfPressedEnter(KeyboardEventArgs e)
     {
@@ -76,14 +77,15 @@ else
 
         DebugHelper.WriteMessage($"Searching for: {searchText}");
 
-        GameData databaseGameData = await DatabaseHandler.GetGameDataAsync(searchText);
-        searchedGameData = databaseGameData.Id >= 0 ? databaseGameData : await SearchWebForGameData(searchText);
-        foundGame = searchedGameData.Id >= 0;
+        // Has to be scrapper, bacuase we can't match user input with database title that easly
+        GameData databaseGameData = await SearchWebForGameData(searchText);
+        foundGame = databaseGameData.Id >= 0;
         if (!foundGame)
         {
             await jsRuntime.InvokeAsync<string>("ShowAlert", $"Could not find any game with title: {searchText}");
             return;
         }
+        searchedGameData = databaseGameData;
         await InvokeAsync(StateHasChanged); // Force SearchedGame component to create and render
 
         if (searchedGame is null || suggestedGames is null)
@@ -125,16 +127,21 @@ else
     private async Task UpdateDatabase(GameData gameData)
     {
         GameData gameDataInDatabase = await DatabaseHandler.GetGameDataAsync(gameData.Title, gameData.ReleaseDate.Year);
-        DateTime weekAgoFromToday = DateTime.Today.AddDays(-7);
+        DateTime weekAgoFromToday = DateTime.Today.AddDays(-daysForUpdate);
 
         if (DateTime.Compare(gameDataInDatabase.LastUpdated, weekAgoFromToday) > 0)
         {
-            // Updated in the past 7 days
+            // Updated in the past daysForUpdate
             // No need to update
             return;
         }
 
         gameData.LastUpdated = DateTime.Today;
-        await DatabaseHandler.UpdateGameDataAsync(gameData);
+
+        // No gamedata in database
+        if (gameDataInDatabase.Title.Length == 0)
+            await DatabaseHandler.AddGameDataAsync(gameData);
+        else
+            await DatabaseHandler.UpdateGameDataAsync(gameData);
     }
 }

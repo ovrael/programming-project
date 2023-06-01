@@ -1,10 +1,17 @@
-﻿namespace MyWebsiteBlazor.Data.Database.Models
+﻿namespace ProgrammingProjectApplication.Data.Database.Models
 {
     public class Response
     {
         public bool Result { get; private set; }
         public string Message { get; private set; }
         public object ReturnedObject { get; private set; }
+
+        public Response()
+        {
+            Result = false;
+            Message = "Empty response";
+            ReturnedObject = new object();
+        }
 
         public Response(bool result, string message)
         {
