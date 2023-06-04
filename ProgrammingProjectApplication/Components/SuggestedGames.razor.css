@@ -12,6 +12,10 @@
 }
 
 .singleGame {
+    /*max-height: 50px;*/
+}
+
+.imgContainer {
     max-height: 50px;
 }
 
@@ -28,6 +32,26 @@
     color: white;
     padding: 6px 12px 6px 12px;
     line-height: 40px;
+    max-height: 50px;
+}
+
+    .textPanel:hover {
+        background: rgba(0,0,0, 0.45);
+        cursor: pointer;
+    }
+
+.descriptionPanel {
+    background: rgba(0,0,0, 0.35);
+    border-radius: 4px;
+    color: white;
+    padding: 6px 12px 6px 12px;
+    height: 0px;
+    visibility: hidden;
+}
+
+.show {
+    visibility: visible !important;
+    height: fit-content !important;
 }
 
 .title {
@@ -81,23 +105,43 @@
 }
 
 .veryLowRating {
-    color: red;
+    color: red !important;
 }
 
 .lowRating {
-    color: rgb(245, 110, 86);
+    color: rgb(245, 110, 86) !important;
 }
 
 .mediumRating {
-    color: rgb(242, 145, 61);
+    color: rgb(242, 145, 61) !important;
 }
 
 .goodRating {
-    color: rgb(136, 226, 21);
+    color: rgb(136, 226, 21) !important;
 }
 
 .veryGoodRating {
-    color: rgb(51, 230, 37);
+    color: rgb(51, 230, 37) !important;
+}
+
+.veryLowSimilarity {
+    background-color: rgb(159, 15, 0) !important;
+}
+
+.lowSimilarity {
+    background-color: rgb(172, 63, 0) !important;
+}
+
+.mediumSimilarity {
+    background-color: rgb(163, 84, 0) !important;
+}
+
+.goodSimilarity {
+    background-color: rgb(79, 116, 0) !important;
+}
+
+.veryGoodSimilarity {
+    background-color: rgb(10, 134, 0) !important;
 }
 
 /* ===== Scrollbar CSS ===== */

@@ -4,25 +4,42 @@
 
 @if (suggestedGames.Length == 0)
 {
+    <div class="row text-center">
+        <div class="col-12 pt-4 pb-2">
+            <h3>
+                We are investigating best possible games
+            </h3>
+        </div>
+        <div class="col-12 pt-4 pb-2">
+            <img class="" style="height: 300px;" src="../img/loupe.png" alt="Loupe" />
+        </div>
+    </div>
     return;
 }
 
+<div class="row text-center">
+    <div class="col-12 pt-4 pb-2">
+        <h3>
+            Maybe try one of them?
+        </h3>
+    </div>
+</div>
 <div class="panel pe-4">
 
     @for (int i = 0; i < suggestedGames.Length; i++)
     {
+        int index = i;
         GameData gameData = suggestedGames[i];
         <div class="row singleGame mb-3">
-            <div class="col-md-12 col-lg-2 text-center">
+            <div class="col-md-12 col-lg-2 text-center imgContainer">
                 <img class="image " src="@gameData.ImageSource" alt="@gameData.Title" />
             </div>
-            <div class="col-md-12 col-lg-10 textPanel">
+            <div class="col-md-12 col-lg-10 textPanel" @onclick="(e)=> ShowGamePanel(index)">
                 <div class="row pe-2">
                     <div class="col-8">
                         <span class="title">@gameData.Title</span>
                     </div>
                     <div class="col-4 ms-auto me-0 pe-0" style="text-align: right;">
-
 
                         @if (gameData.DiscountedPrice > 0)
                         {
@@ -40,15 +57,40 @@
                             </span>
                         }
 
-                        <span class="@GetRatingColorClass(gameData) ratingPanel text-center px-2">
+                        <span class="@GetRatingColorClass(gameData.RatingInPercantage) ratingPanel text-center px-2">
                             @gameData.RatingInPercantage %
-                            @*<span class="reviewsCountTooltip">
-                        @GetReviesCount() reviews
-                        </span>*@
                         </span>
 
                     </div>
                 </div>
+            </div>
+            <div class="col-md-12 col-lg-10 offset-lg-2 descriptionPanel @descriptionPanelVisibilities[index]">
+                <div class="row">
+                    <div class="col-12">
+                        @gameData.Description
+                    </div>
+                </div>
+                <div class="row mt-4" style="height: 40px !important;">
+                    <div class="col-1 me-2 pe-0" style="line-height: 50px; width:fit-content !important;">
+                        Similarity:
+                    </div>
+                    <div class="col pt-3" style="line-height: 40px !important;">
+                        <div class="progress" style="line-height: 40px !important;">
+                            <div class="progress-bar progress-bar-striped @GetSimilarityColorClass(gameData.Similarity)" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style=" width : @gameData.Similarity%; line-height: 40px !important; ">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-5">
+                    </div>
+                    <div class="col-1">
+                        <div class="" style="line-height: 20px;">
+                            <a href="@gameData.SteamUrl">
+                                <img class="" style="height: 40px !important;" src="../img/steamIcon.png" alt="@gameData.Title Steam url" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     }
@@ -57,42 +99,72 @@
 @code
 {
     private GameData gameData = new GameData();
-
     private GameData[] suggestedGames = Array.Empty<GameData>();
 
-    public void SetGameData(GameData gameData)
+    private string showClass = "show";
+    private Dictionary<int, string> descriptionPanelVisibilities = new Dictionary<int, string>();
+
+
+    public async Task SetGameData(GameData gameData)
     {
         if (gameData is null) return;
         this.gameData = gameData;
 
-        suggestedGames = new GameData[30];
+        suggestedGames = await GetSuggestedGames();
+        descriptionPanelVisibilities = new Dictionary<int, string>();
         for (int i = 0; i < suggestedGames.Length; i++)
         {
-            suggestedGames[i] = this.gameData;
+            descriptionPanelVisibilities.Add(i, string.Empty);
         }
 
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
-    private string GetRatingColorClass(GameData gameData)
+    private async Task<GameData[]> GetSuggestedGames()
+    {
+        GameDataSimilarity[] gameDataSimilarities = await MachineLearning.Recommendation.GetSimilarGamesAsync(gameData);
+        const int maxSuggestedGamesCount = 10;
+        int suggestedGamesCount = gameDataSimilarities.Length < maxSuggestedGamesCount ? gameDataSimilarities.Length : maxSuggestedGamesCount;
+
+        GameData[] suggestedGamesData = new GameData[suggestedGamesCount];
+
+        GameDataSimilarity[] bestSimilarities = gameDataSimilarities.OrderByDescending(g => g.SimilarityCoefficientValue).Take(suggestedGamesCount).ToArray();
+
+        for (int i = 0; i < suggestedGamesCount; i++)
+        {
+            suggestedGamesData[i] = await DatabaseHandler.GetGameDataAsync(bestSimilarities[i].OtherGameDataId);
+            suggestedGamesData[i].Similarity = (int)(bestSimilarities[i].SimilarityCoefficientValue * 100);
+        }
+
+        return suggestedGamesData;
+    }
+
+    private string GetRatingColorClass(int value)
     {
         int[] ratingThresholds = new int[] { 25, 45, 65, 85, 101 };
         string[] ratingClasses = new string[] { "veryLow", "low", "medium", "good", "veryGood" };
 
         for (int i = 0; i < ratingThresholds.Length; i++)
         {
-            if (gameData.RatingInPercantage < ratingThresholds[i])
+            if (value < ratingThresholds[i])
                 return ratingClasses[i] + "Rating";
         }
 
         return "mediumRating";
     }
 
-    private string GetReviesCount()
+    private string GetSimilarityColorClass(int value)
     {
-        var numberFormat = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
-        numberFormat.NumberGroupSeparator = " ";
-        return gameData.ReviewsCount.ToString("#,0", numberFormat);
+        int[] ratingThresholds = new int[] { 20, 40, 60, 80, 101 };
+        string[] ratingClasses = new string[] { "veryLow", "low", "medium", "good", "veryGood" };
+
+        for (int i = 0; i < ratingThresholds.Length; i++)
+        {
+            if (value < ratingThresholds[i])
+                return ratingClasses[i] + "Similarity";
+        }
+
+        return "mediumSimilarity";
     }
 
     private string GetPriceText(GameData gameData)
@@ -101,5 +173,20 @@
             return gameData.OriginalPrice.ToString("N2") + " $";
         else
             return "Free";
+    }
+
+    private void ShowGamePanel(int gameIndex)
+    {
+        if (descriptionPanelVisibilities[gameIndex] == showClass)
+        {
+            descriptionPanelVisibilities[gameIndex] = string.Empty;
+            return;
+        }
+        DebugHelper.WriteMessage("Open index: " + gameIndex);
+
+        var visiblePanelIndex = descriptionPanelVisibilities.FirstOrDefault(v => v.Value == showClass).Key;
+        descriptionPanelVisibilities[visiblePanelIndex] = string.Empty;
+
+        descriptionPanelVisibilities[gameIndex] = showClass;
     }
 }

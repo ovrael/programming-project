@@ -166,69 +166,19 @@ namespace ProgrammingProjectApplication.Data
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(resultsHtml);
 
-            var node = doc.DocumentNode.SelectNodes("//a");
+            var gameNodes = doc.DocumentNode.SelectNodes("//a[contains(@class, 'search_result_row')]");
 
-            if (node is null)
+            if (gameNodes is null)
                 return new Response(false, $"Couldn't find game with title:{title}", new GameData());
-            return await GetGameDatFromHtmlNode(node.First());
-            //var firstGameNode = node.First();
-            //GameData gameData = new GameData() { Id = 0 };
 
-            //var titleNode = firstGameNode.SelectSingleNode(".//span[contains(@class, 'title')]");
-            //gameData.Title = titleNode is not null ? titleNode.InnerText.Trim() : string.Empty;
-
-
-            //var priceNode = firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_price discounted')]");
-            //priceNode ??= firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_price')]");
-
-            //string[] prices = priceNode.InnerText.Trim().Split("$").Skip(1).ToArray();
-
-            //if (prices.Length >= 1)
-            //{
-            //    if (prices[0].Trim().ToLower() == "free to play")
-            //        gameData.OriginalPrice = 0.0;
-            //    else
-            //    {
-            //        double.TryParse(prices[0].Trim().Replace(',', '.'), out double originalPrice);
-            //        gameData.OriginalPrice = originalPrice;
-            //    }
-            //}
-
-            //if (prices.Length >= 2)
-            //{
-            //    double.TryParse(prices[1].Trim().Replace(',', '.'), out double discountedPrice);
-            //    gameData.DiscountedPrice = discountedPrice;
-            //}
-
-            //var releaseDateNode = firstGameNode.SelectSingleNode(".//div[contains(@class, 'search_released')]");
-            //if (releaseDateNode != null)
-            //{
-            //    DateTime.TryParse(releaseDateNode.InnerText.Trim(), out DateTime releaseDate);
-            //    gameData.ReleaseDate = releaseDate;
-            //}
-
-            //var urlLinkNode = firstGameNode.SelectSingleNode("//a[@href]");
-            //if (urlLinkNode != null)
-            //{
-            //    string hrefValue = firstGameNode.Attributes["href"].Value;
-            //    gameData.SteamUrl = hrefValue;
-            //}
-
-            //if (gameData.SteamUrl is null || gameData.SteamUrl.Length == 0)
-            //    return new Response(true, $"Found: {gameData.Title} game", gameData);
-
-            //var additionalData = await ScrapeAdditionalGameData(gameData.SteamUrl);
-            //gameData.Tags = additionalData["tags"];
-            //gameData.Description = additionalData["description"];
-            //gameData.ImageSource = additionalData["imageSource"];
-
-            //int.TryParse(additionalData["ratingPercentage"], out int ratingPercentage);
-            //int.TryParse(additionalData["reviewsCount"], out int reviewsCount);
-            //gameData.RatingInPercantage = ratingPercentage;
-            //gameData.ReviewsCount = reviewsCount;
-            //gameData.LastUpdated = DateTime.Today;
-
-            //return new Response(true, $"Found: {gameData.Title} game", gameData);
+            // Get first available game
+            foreach (var gameNode in gameNodes)
+            {
+                var response = await GetGameDatFromHtmlNode(gameNode);
+                if (response.Result)
+                    return response;
+            }
+            return new Response(false, $"Couldn't find game with title:{title}", new GameData());
         }
 
         private static async Task<string> GetResultHTML(string url)
@@ -272,7 +222,14 @@ namespace ProgrammingProjectApplication.Data
         /// </returns>
         private static async Task<Dictionary<string, string>> ScrapeAdditionalGameData(string url)
         {
-            Dictionary<string, string> additionalData = new Dictionary<string, string>();
+            Dictionary<string, string> additionalData = new Dictionary<string, string>()
+            {
+                {"tags", string.Empty },
+                {"description", string.Empty },
+                {"ratingPercentage", string.Empty },
+                {"reviewsCount", string.Empty },
+                {"imageSource", string.Empty },
+            };
 
             var baseAddress = new Uri("http://example.com");
             var cookieContainer = new CookieContainer();
@@ -283,7 +240,15 @@ namespace ProgrammingProjectApplication.Data
                 var response = await client.GetAsync(url);
 
                 // Handle this exception!
-                response.EnsureSuccessStatusCode();
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+                catch (HttpRequestException e)
+                {
+                    DebugHelper.WriteMessage($"Can't get additional game data from steam. Exception msg: {e.Message}");
+                    return additionalData;
+                }
 
                 // Load html
                 var html = await response.Content.ReadAsStringAsync();
@@ -299,33 +264,33 @@ namespace ProgrammingProjectApplication.Data
                     var tags = tagNodes.Select(t => t.InnerText.Trim());
                     joinedTags = string.Join(";", tags);
                 }
-                additionalData.Add("tags", joinedTags);
+                additionalData["tags"] = joinedTags;
 
 
                 // Description
                 var descriptionNode = docNode.SelectSingleNode("//div[contains(@class, 'game_description_snippet')]");
                 string description = descriptionNode is not null ? descriptionNode.InnerText.Trim() : string.Empty;
-                additionalData.Add("description", description);
+                additionalData["description"] = description;
 
 
                 // Rating in percantage
                 var ratingNode = docNode.SelectSingleNode("//span[contains(@class, 'responsive_reviewdesc_short')]");
                 string rating = ratingNode is not null ? ratingNode.InnerText.Trim() : string.Empty;
                 rating = rating.Trim('(', ')').Split('%')[0];
-                additionalData.Add("ratingPercentage", rating);
+                additionalData["ratingPercentage"] = rating;
 
                 // Reviews count
                 var reviewsCountNode = docNode.SelectSingleNode("//span[contains(@class, 'user_reviews_count')]");
                 string reviewsCount = reviewsCountNode is not null ? reviewsCountNode.InnerText.Trim('(', ')') : string.Empty;
                 reviewsCount = reviewsCount.Replace(",", string.Empty);
                 reviewsCount = reviewsCount.Replace(".", string.Empty);
-                additionalData.Add("reviewsCount", reviewsCount);
+                additionalData["reviewsCount"] = reviewsCount;
 
 
                 // Image source
                 var imageNode = docNode.SelectSingleNode("//img[contains(@class, 'game_header_image_full')]");
                 string imageSource = imageNode is not null ? imageNode.Attributes["src"].Value : string.Empty;
-                additionalData.Add("imageSource", imageSource);
+                additionalData["imageSource"] = imageSource;
             }
 
             return additionalData;
@@ -367,12 +332,11 @@ namespace ProgrammingProjectApplication.Data
             return tags.ToArray();
         }
 
-
-        public static async Task<GameData[]> ScrapeGameData(IEnumerable<SteamTag> steamTags, int gamesCount = 100)
+        public static async Task<GameData[]> ScrapeGameData(IEnumerable<SteamTag> steamTags, int gamesCount = 25, int startOffset = 0)
         {
             // Category1=998 -> search only games (not bundles)
             // Count=1000 -> get 1000 titles at max
-            string steamSearchUrl = @$"https://store.steampowered.com/search/?supportedlang=english&ndl=1&category1=998&cc=us&infinite=1&count={gamesCount}";
+            string steamSearchUrl = @$"https://store.steampowered.com/search/?supportedlang=english&ndl=1&category1=998&cc=us&infinite=1&count={gamesCount}&start={startOffset}";
             if (steamTags.Count() > 0)
             {
                 StringBuilder tagsQuery = new StringBuilder($"&tags={steamTags.ElementAt(0).Value}"); // First tag is cleared, to the rest '2C' is added
@@ -397,6 +361,11 @@ namespace ProgrammingProjectApplication.Data
             int gameCounter = 0;
             foreach (var gameRow in gamesCollection)
             {
+                if (games.Count >= gamesCount)
+                {
+                    break;
+                }
+
                 DebugHelper.WriteMessage($"Scrapping {gameCounter} game row");
                 gameCounter++;
 
@@ -469,9 +438,13 @@ namespace ProgrammingProjectApplication.Data
             }
 
             if (gameData.SteamUrl is null || gameData.SteamUrl.Length == 0)
-                return new Response(true, $"Found: {gameData.Title} game", gameData);
+                return new Response(false, $"Can't get game steam url", new GameData()); ;
 
             var additionalData = await ScrapeAdditionalGameData(gameData.SteamUrl);
+
+            if (additionalData["tags"].Length == 0)
+                return new Response(false, $"Game has no tags. Maybe it is package?", new GameData());
+
             gameData.Tags = additionalData["tags"];
             gameData.Description = additionalData["description"];
             gameData.ImageSource = additionalData["imageSource"];

@@ -73,6 +73,11 @@ namespace ProgrammingProjectApplication.Database
         {
             return await databaseAsyncConnection.Table<GameData>().ToArrayAsync();
         }
+        public static async Task<GameData[]> GetClusteredGamesDataAsync(int clusterId)
+        {
+            var games = await databaseAsyncConnection.Table<GameData>().ToArrayAsync();
+            return games.Where(g => g.Cluster == clusterId).ToArray();
+        }
 
         public static async Task<Response> DeleteGameDataAsync(string title)
         {
@@ -94,6 +99,17 @@ namespace ProgrammingProjectApplication.Database
 
             var tableContent = await databaseAsyncConnection.Table<GameData>().ToArrayAsync();
             var gameData = tableContent.FirstOrDefault(gd => gd.Title == title);
+
+            return gameData is null ? new GameData() : gameData;
+        }
+
+        public static async Task<GameData> GetGameDataAsync(int id)
+        {
+            if (id < 0)
+                return new GameData();
+
+            var tableContent = await databaseAsyncConnection.Table<GameData>().ToArrayAsync();
+            var gameData = tableContent.FirstOrDefault(gd => gd.Id == id);
 
             return gameData is null ? new GameData() : gameData;
         }
@@ -133,6 +149,22 @@ namespace ProgrammingProjectApplication.Database
             catch (Exception e)
             {
                 return new Response(false, $"Can't update:{gameData.Title}! Exception message: {e.Message}");
+            }
+        }
+
+        public static async Task<Response> UpdateManyGameDataAsync(GameData[] gameDatas)
+        {
+            try
+            {
+                int modifiedRows = await databaseAsyncConnection.UpdateAllAsync(gameDatas);
+                if (modifiedRows > 0)
+                    return new Response(true, $"{modifiedRows} games succesfully updated!");
+                else
+                    return new Response(false, $"Update operation failed.");
+            }
+            catch (Exception e)
+            {
+                return new Response(false, $"Can't update many games! Exception message: {e.Message}");
             }
         }
         #endregion

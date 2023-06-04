@@ -19,6 +19,10 @@ namespace ProgrammingProjectApplication.Database
         public double OriginalPrice { get; set; } = 0.0;
         public double DiscountedPrice { get; set; } = 0.0;
 
+        public int Cluster { get; set; } = -1;
+        [Ignore]
+        public int Similarity { get; set; }
+
 
         public DateTime ReleaseDate { get; set; } = DateTime.MinValue;
         public DateTime LastUpdated { get; set; } = DateTime.MinValue;
