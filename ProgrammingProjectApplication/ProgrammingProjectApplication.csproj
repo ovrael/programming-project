@@ -22,4 +22,13 @@
     <Folder Include="MachineLearning\Models\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Data\Database\Files\gamesData.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="MachineLearning\Models\kmeansClustering.ml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

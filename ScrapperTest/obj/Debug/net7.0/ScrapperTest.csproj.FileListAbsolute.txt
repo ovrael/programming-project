@@ -120,3 +120,12 @@ C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Microsoft.A
 C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Microsoft.JSInterop.WebAssembly.dll
 C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Castle.Core.dll
 C:\GitRepositories\programming-project\ScrapperTest\bin\Debug\net7.0\Moq.dll
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\bin\Debug\net7.0\CoverletSourceRootsMapping
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.csproj.AssemblyReference.cache
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.AssemblyInfoInputs.cache
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.AssemblyInfo.cs
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.csproj.CoreCompileInputs.cache
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.dll
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\refint\ScrapperTest.dll
+C:\Users\ovrae\OneDrive\VisualStudio2022\Blazor\programming-project\ScrapperTest\obj\Debug\net7.0\ScrapperTest.pdb

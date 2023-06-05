@@ -11,6 +11,7 @@ html, body {
 .resetText {
     font-size: 20px;
     cursor: pointer;
+    color: #C0E970;
 }
 
 h1:focus {
