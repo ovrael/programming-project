@@ -31,19 +31,12 @@
 }
 else
 {
-    <div class="row text-center">
-        <div class="col-12 py-3">
-            <h3>
-                You searched for
-            </h3>
-        </div>
-    </div>
     <SearchedGame @ref="searchedGame"></SearchedGame>
-    <div class="row text-center">
-        <div class="col-12 pt-4 pb-2">
-            <h3>
-                Maybe try one of them?
-            </h3>
+    <div class="row text-center" style="width: 300px; margin: 0 auto;">
+        <div class="col-12 py-1 resetText" @onclick="ResetSearch">
+            <i>
+                Search for something else
+            </i>
         </div>
     </div>
     <SuggestedGames @ref="suggestedGames"></SuggestedGames>
@@ -71,7 +64,7 @@ else
         searchText = searchText.Trim();
         if (searchText.Length == 0)
         {
-            Console.WriteLine("Search text is empty");
+            DebugHelper.WriteMessage("Search text is empty");
             return;
         }
 
@@ -96,8 +89,9 @@ else
         }
 
         searchedGame.SetGameData(searchedGameData);
-        suggestedGames.SetGameData(searchedGameData);
-        await UpdateDatabase(searchedGameData);
+        int gameId = await UpdateDatabase(searchedGameData);
+        searchedGameData.Id = gameId;
+        await suggestedGames.SetGameData(searchedGameData);
 
         DebugHelper.WriteMessage($"Found: {DebugHelper.GameDataToString(searchedGameData)}");
     }
@@ -124,7 +118,7 @@ else
         return gameData;
     }
 
-    private async Task UpdateDatabase(GameData gameData)
+    private async Task<int> UpdateDatabase(GameData gameData)
     {
         GameData gameDataInDatabase = await DatabaseHandler.GetGameDataAsync(gameData.Title, gameData.ReleaseDate.Year);
         DateTime weekAgoFromToday = DateTime.Today.AddDays(-daysForUpdate);
@@ -133,7 +127,7 @@ else
         {
             // Updated in the past daysForUpdate
             // No need to update
-            return;
+            return gameDataInDatabase.Id;
         }
 
         gameData.LastUpdated = DateTime.Today;
@@ -143,5 +137,15 @@ else
             await DatabaseHandler.AddGameDataAsync(gameData);
         else
             await DatabaseHandler.UpdateGameDataAsync(gameData);
+
+        var x = await DatabaseHandler.GetGameDataAsync(gameData.Title, gameData.ReleaseDate.Year);
+        return x.Id;
+    }
+
+    private void ResetSearch()
+    {
+        foundGame = false;
+        searchText = string.Empty;
+        searchedGameData = new GameData();
     }
 }

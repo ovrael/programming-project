@@ -3,6 +3,7 @@
 @using ProgrammingProjectApplication.Database;
 @using ProgrammingProjectApplication.Tools;
 @using ProgrammingProjectApplication.Data;
+@using System.Text;
 @inject IJSRuntime jsRuntime
 
 
@@ -41,6 +42,28 @@
 
     <div class="row adminPanelRow">
         <div class="col-8">
+            TRAIN and SAVE kmeans clustering model?
+        </div>
+        <div class="col-2 offset-2 ms-auto me-0">
+            <button type="button" class="btn optionButton updateButton" @onclick="TrainMLModel">
+                RUN
+            </button>
+        </div>
+    </div>
+
+    <div class="row adminPanelRow">
+        <div class="col-8">
+            ASSING clusters to games?
+        </div>
+        <div class="col-2 offset-2 ms-auto me-0">
+            <button type="button" class="btn optionButton updateButton" @onclick="AssignClusters">
+                ASSIGN
+            </button>
+        </div>
+    </div>
+
+    <div class="row adminPanelRow">
+        <div class="col-8">
             CLEAR steam tags table in database?
         </div>
         <div class="col-2 offset-2 ms-auto me-0">
@@ -52,7 +75,15 @@
 
     <div class="row adminPanelRow">
         <div class="col-8">
-            UPDATE scrapper data in database?
+            <span>
+                UPDATE scrapper data in database?
+            </span>
+            <span class="ms-5">
+                <input class="" type="checkbox" @bind="useBatchesForDownlaod" id="">
+                <label class="form-check-label" for="flexCheckDefault">
+                    Use batches
+                </label>
+            </span>
         </div>
         <div class="col-2 offset-2 ms-auto me-0">
             <button type="button" class="btn optionButton updateButton" @onclick="UpdateDatabaseGameData" disabled=@updateGameDataButtonDisable>
@@ -93,7 +124,7 @@
         <div class="col-3 mt-2 pb-2">
             <span class="searchBar">
                 <input class="searchQueryInput" type="text" placeholder="Games count" value="@inputGamesCount"
-                       @oninput="(e)=> {inputGamesCount = e.Value.ToString();}" />
+                       @oninput="(e)=> {inputGamesCount = e.Value.ToString(); }" />
             </span>
         </div>
     </div>
@@ -101,13 +132,18 @@
 
 @code
 {
+    private bool adminLogged = false;
+
     private string inputPassword = string.Empty;
     private string inputTag = string.Empty;
-    private string inputGamesCount = "20";
-    private bool adminLogged = true;
+    private string inputGamesCount = "25";
+
+    private bool useBatchesForDownlaod = false;
+
     private SteamTag[] steamTags = Array.Empty<SteamTag>();
     private List<SteamTag> filteredTags = new List<SteamTag>();
     private List<SteamTag> selectedTags = new List<SteamTag>();
+    private Dictionary<string, int> updateStatus = new Dictionary<string, int>() { { "Add", 0 }, { "Update", 0 }, { "Fail", 0 } };
 
     private bool updateGameDataButtonDisable = false;
     private string updateGameDataButtonText = "UPDATE";
@@ -178,24 +214,57 @@
 
     private async Task UpdateDatabaseGameData()
     {
+        ClearStatusDictionary();
         DebugHelper.WriteMessage("Updating...");
         updateGameDataButtonDisable = true;
-        updateGameDataButtonText = "Downloading...";
-        await InvokeAsync(StateHasChanged);
 
         int.TryParse(inputGamesCount, out int gamesCount);
 
         if (gamesCount <= 0)
-            gamesCount = 20;
+            gamesCount = 25;
+        else if (gamesCount >= 100)
+            useBatchesForDownlaod = true;
 
-        var games = await SteamScrapper.ScrapeGameData(selectedTags, gamesCount);
+        if (useBatchesForDownlaod)
+        {
+            const int batchCapacity = 25;
+            int batchesCount = gamesCount / batchCapacity;
+            batchesCount += gamesCount % batchCapacity != 0 ? 1 : 0; //
+            int leftGamesCount = gamesCount;
 
+            for (int i = 0; i < batchesCount; i++)
+            {
+                DebugHelper.WriteMessage($"Batches updates - games left: {leftGamesCount}");
+                leftGamesCount -= batchCapacity;
+                if (leftGamesCount < 0) break;
+
+                updateGameDataButtonText = "Downloading...";
+                await InvokeAsync(StateHasChanged);
+                var games = await SteamScrapper.ScrapeGameData(selectedTags, batchCapacity, i * batchCapacity);
+                await UpdateGamesInDatabase(games);
+
+            }
+        }
+        else // Quite repetitive but we leave it as it is...
+        {
+            updateGameDataButtonText = "Downloading...";
+            await InvokeAsync(StateHasChanged);
+            var games = await SteamScrapper.ScrapeGameData(selectedTags, gamesCount);
+            await UpdateGamesInDatabase(games);
+        }
+
+        updateGameDataButtonDisable = false;
+        updateGameDataButtonText = "UPDATE";
+        await InvokeAsync(StateHasChanged);
+
+        await jsRuntime.InvokeVoidAsync("ShowAlert", $"Added: {updateStatus["Add"]}\n Updated: {updateStatus["Update"]}\n Failed: {updateStatus["Fail"]}");
+    }
+
+    private async Task UpdateGamesInDatabase(GameData[] games)
+    {
         updateGameDataButtonText = "Updating...";
         await InvokeAsync(StateHasChanged);
 
-        int addedGamesCounter = 0;
-        int updatedGamesCounter = 0;
-        int failedOperationsCounter = 0;
         int gameCounter = 0;
 
         foreach (var game in games)
@@ -210,22 +279,33 @@
                 game.Id = gameDataIndex;
 
                 dbResponse = await DatabaseHandler.UpdateGameDataAsync(game);
-                if (dbResponse.Result) updatedGamesCounter++;
-                else failedOperationsCounter++;
+                if (dbResponse.Result) updateStatus["Update"]++;
+                else updateStatus["Fail"]++;
             }
             else
             {
                 dbResponse = await DatabaseHandler.AddGameDataAsync(game);
-                if (dbResponse.Result) addedGamesCounter++;
-                else failedOperationsCounter++;
+                if (dbResponse.Result) updateStatus["Add"]++;
+                else updateStatus["Fail"]++;
             }
         }
+    }
 
-        updateGameDataButtonDisable = false;
-        updateGameDataButtonText = "UPDATE";
-        await InvokeAsync(StateHasChanged);
+    private void ClearStatusDictionary()
+    {
+        updateStatus["Add"] = 0;
+        updateStatus["Update"] = 0;
+        updateStatus["Fail"] = 0;
+    }
 
-        await jsRuntime.InvokeAsync<string>("ShowAlert", $"Added: {addedGamesCounter}\n Updated: {updatedGamesCounter}\n Failed: {failedOperationsCounter}");
+    private async Task TrainMLModel()
+    {
+        string modelFileName = "kmeansClustering.ml";
+        await MachineLearning.Recommendation.TrainAndSaveModelToFile(modelFileName);
+    }
 
+    private async Task AssignClusters()
+    {
+        await MachineLearning.Recommendation.AssignClusterToAllGameData();
     }
 }
